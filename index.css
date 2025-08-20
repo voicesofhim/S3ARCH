@@ -1,0 +1,205 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    background-color: #000;
+    color: #fff;
+    font-family: 'Space Mono', monospace;
+    overflow: hidden;
+}
+
+#app {
+    display: flex;
+    height: 100vh;
+}
+
+#editor {
+    flex-grow: 1;
+    padding: 3rem;
+    font-size: 2.5rem;
+    line-height: 1.6;
+    overflow-y: auto;
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    cursor: text;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.ai-output {
+    color: #aaa;
+    display: inline;
+}
+
+.ai-output.is-placeholder {
+    color: #888;
+    animation: blink 1.8s infinite;
+}
+
+.committed-input {
+    color: #ff80bf; /* Pink for committed text */
+    display: inline;
+}
+
+.input-active {
+    display: inline;
+    outline: none;
+    caret-color: #fff;
+}
+
+.input-active.is-placeholder {
+    color: #888;
+    cursor: text;
+}
+
+.ghost-text {
+    color: #666; /* Light gray for suggestions */
+    pointer-events: none;
+    display: inline;
+}
+
+#stats {
+    position: fixed;
+    bottom: 3rem;
+    left: 3rem;
+    font-size: 1.4rem;
+    color: #AAA;
+    display: flex;
+    gap: 1.5rem;
+    transition: opacity 0.3s ease-in-out;
+}
+
+#stats.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#controls {
+    position: fixed;
+    bottom: 3rem;
+    right: 3rem;
+    font-size: 1.4rem;
+    color: #888;
+    display: flex;
+    gap: 1.5rem;
+    user-select: none;
+}
+
+#controls > div {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+#controls > div:hover {
+    color: #fff;
+}
+
+#memory-bank-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#memory-bank-modal.hidden {
+    display: none;
+}
+
+#memory-bank-content {
+    background-color: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 2rem 3rem;
+    width: 80%;
+    max-width: 800px;
+    height: 80%;
+    display: flex;
+    flex-direction: column;
+}
+
+#memory-bank-content h2 {
+    margin-top: 0;
+    font-size: 2.5rem;
+    color: #fff;
+}
+#memory-bank-content p {
+    font-size: 1.6rem;
+    color: #888;
+    margin-bottom: 2rem;
+}
+
+#memory-bank-textarea {
+    flex-grow: 1;
+    width: 100%;
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.6rem;
+    padding: 1rem;
+    resize: none;
+    outline: none;
+}
+
+#memory-bank-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1.5rem;
+}
+
+#memory-bank-actions button {
+    background: #333;
+    color: #fff;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.4rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+#memory-bank-actions button:hover {
+    background: #555;
+}
+
+#memory-bank-actions button#memory-bank-close {
+    background: none;
+    border: 1px solid #333;
+}
+#memory-bank-actions button#memory-bank-close:hover {
+    background: #222;
+}
+
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #222;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Canvas</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono&display=swap" rel="stylesheet">
+    <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^0.12.0",
+    "path": "https://esm.sh/path@^0.12.7",
+    "vite": "https://esm.sh/vite@^7.0.5"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <main id="app">
+        <div id="editor" aria-live="polite" aria-atomic="false"></div>
+    </main>
+    <div id="stats" class="hidden">
+        <div id="timer"></div>
+        <div id="token-counter"></div>
+        <div id="cost-estimator"></div>
+    </div>
+    <div id="controls">
+        <div id="toggle-analytics">[ Analytics ]</div>
+        <div id="memory-bank-toggle">[ Memory ]</div>
+    </div>
+    <div id="memory-bank-modal" class="hidden">
+        <div id="memory-bank-content">
+            <h2>Memory Bank</h2>
+            <p>This context is added to the AI's system prompt.</p>
+            <textarea id="memory-bank-textarea" spellcheck="false"></textarea>
+            <div id="memory-bank-actions">
+                <button id="memory-bank-save">Save & Reload</button>
+                <button id="memory-bank-close">Close</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html><script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.10.0"
+  }
+}
+</script>

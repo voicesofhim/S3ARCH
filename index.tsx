@@ -329,6 +329,111 @@ const getChatHistoryFromDOM = (): Content[] => {
     return history;
 };
 
+const captureCurrentContext = (): string => {
+    const editorChildren = Array.from(editorElement.children);
+    let contextText = '';
+    
+    for (const child of editorChildren) {
+        if (child.classList.contains('committed-input')) {
+            const userText = (child as HTMLElement).innerText.trim();
+            if (userText) {
+                contextText += `User: ${userText}\n`;
+            }
+        } else if (child.classList.contains('ai-output')) {
+            if (!child.classList.contains('is-placeholder')) {
+                const aiText = (child as HTMLElement).innerText.trim();
+                if (aiText) {
+                    contextText += `AI: ${aiText}\n`;
+                }
+            }
+        }
+    }
+    
+    // Also capture current active input if it has content
+    const activeInput = getActiveInput();
+    if (activeInput && !activeInput.classList.contains('is-placeholder')) {
+        const currentText = activeInput.innerText.trim();
+        if (currentText) {
+            contextText += `User (current): ${currentText}\n`;
+        }
+    }
+    
+    return contextText.trim();
+};
+
+const animateTextSaving = (elements: HTMLElement[]) => {
+    elements.forEach((element, index) => {
+        setTimeout(() => {
+            element.classList.add('saving-to-memory');
+            
+            // After animation completes, add permanent saved class
+            setTimeout(() => {
+                element.classList.remove('saving-to-memory');
+                element.classList.add('saved-to-memory');
+            }, 800);
+        }, index * 100); // Stagger the animations
+    });
+};
+
+const saveContextToMemoryBank = async () => {
+    const currentContext = captureCurrentContext();
+    if (!currentContext) {
+        console.log('No context to save');
+        return;
+    }
+    
+    // Get all text elements that are being saved
+    const editorChildren = Array.from(editorElement.children);
+    const elementsToAnimate: HTMLElement[] = [];
+    
+    for (const child of editorChildren) {
+        if (child.classList.contains('committed-input') || child.classList.contains('ai-output')) {
+            if (!child.classList.contains('is-placeholder')) {
+                elementsToAnimate.push(child as HTMLElement);
+            }
+        }
+    }
+    
+    // Also include active input if it has content
+    const activeInput = getActiveInput();
+    if (activeInput && !activeInput.classList.contains('is-placeholder')) {
+        const currentText = activeInput.innerText.trim();
+        if (currentText) {
+            elementsToAnimate.push(activeInput);
+        }
+    }
+    
+    // Start the creative animation
+    animateTextSaving(elementsToAnimate);
+    
+    // Add timestamp and separator
+    const timestamp = new Date().toLocaleString();
+    const contextEntry = `\n--- Context saved on ${timestamp} ---\n${currentContext}\n--- End of context ---\n`;
+    
+    // Append to current memories
+    currentMemories = currentMemories ? currentMemories + contextEntry : contextEntry.trim();
+    
+    // Save to localStorage
+    localStorage.setItem('memories', currentMemories);
+    
+    // Re-initialize chat with updated memories
+    await initializeChat();
+    
+    // Show brief confirmation
+    console.log('Context saved to memory bank');
+    
+    // Enhanced memory bank toggle animation
+    memoryBankToggleElement.style.backgroundColor = '#00E6F5';
+    memoryBankToggleElement.style.boxShadow = '0 0 20px rgba(0, 230, 245, 0.6)';
+    memoryBankToggleElement.style.transform = 'scale(1.05)';
+    
+    setTimeout(() => {
+        memoryBankToggleElement.style.backgroundColor = '';
+        memoryBankToggleElement.style.boxShadow = '';
+        memoryBankToggleElement.style.transform = '';
+    }, 400);
+};
+
 
 
 const isCursorAtEnd = (element: HTMLElement) => {
@@ -437,7 +542,7 @@ async function main() {
           acceptSuggestion();
         } else if (e.key === 'Tab') {
           e.preventDefault();
-          handleSubmit();
+          // Tab alone no longer submits - only accepts suggestions
         }
       } else if (e.key === 'Escape') {
         if (hasGhostText) {
@@ -501,6 +606,15 @@ async function main() {
         
         alert('Memories saved. The editor will now be reloaded.');
         handleClearEditor();
+    });
+
+    // Global keyboard event listener for Command+Return
+    document.addEventListener('keydown', (e) => {
+        // Command+Return (Cmd+Return on Mac)
+        if ((e.key === 'Enter' || e.key === 'Return') && e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey) {
+            e.preventDefault();
+            saveContextToMemoryBank();
+        }
     });
 
     // Final UI setup

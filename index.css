@@ -43,7 +43,7 @@ html, body {
 }
 
 .committed-input {
-    color: #ff80bf; /* Pink for committed text */
+    color: #fff; /* White for regular committed text */
     display: inline;
 }
 
@@ -59,9 +59,13 @@ html, body {
 }
 
 .ghost-text {
-    color: #666; /* Light gray for suggestions */
+    color: #666; /* Light gray for model suggestions */
     pointer-events: none;
     display: inline;
+}
+
+.ghost-text.memory-prediction {
+    color: #00E6F5; /* Cyan for memory suggestions */
 }
 
 #stats {
@@ -155,7 +159,17 @@ html, body {
 
 .saved-to-memory {
     color: #00E6F5 !important;
-    transition: color 0.3s ease;
+    background: rgba(0, 230, 245, 0.1);
+    border: 1px solid rgba(0, 230, 245, 0.3);
+    border-radius: 6px;
+    padding: 0.2em 0.4em;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9em;
+    margin: 0.3em 2px;
+    transition: all 0.3s ease;
+    display: inline-block;
+    box-shadow: 0 1px 3px rgba(0, 230, 245, 0.2);
+    vertical-align: baseline;
 }
 
 #memory-bank-modal {
@@ -241,6 +255,14 @@ html, body {
 }
 #memory-bank-actions button#memory-bank-close:hover {
     background: #222;
+}
+
+#memory-bank-actions button#memory-bank-clear {
+    background: #dc2626;
+    color: #fff;
+}
+#memory-bank-actions button#memory-bank-clear:hover {
+    background: #b91c1c;
 }
 
 

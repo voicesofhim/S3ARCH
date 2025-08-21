@@ -7,7 +7,8 @@ import { GoogleGenAI, Chat, UsageMetadata, GenerateContentResponse, Content } fr
 // --- CONFIGURATION ---
 const BASE_SYSTEM_INSTRUCTION = "You are an AI assistant helping a user write. Your primary goal is to provide concise, relevant, and in-context completions for the user's thoughts. You should act as a silent partner, completing sentences or ideas. Do not be conversational. Be a tool. Complete the user's thought based on the current text and the provided memory context. The user is typing, and you are providing a ghost text suggestion for what they might type next. Keep auto suggestions to 3 words max";
 const PLACEHOLDER_TEXT = 'Type something...';
-// Pricing for gemini-2.5-flash-lite model
+// Pricing for 
+
 const PRICE_PER_INPUT_TOKEN = 0.10 / 1_000_000;
 const PRICE_PER_OUTPUT_TOKEN = 0.40 / 1_000_000;
 
@@ -22,12 +23,13 @@ const memoryBankToggleElement = document.getElementById('memory-bank-toggle') as
 const memoryBankModalElement = document.getElementById('memory-bank-modal') as HTMLDivElement;
 const memoryBankTextareaElement = document.getElementById('memory-bank-textarea') as HTMLTextAreaElement;
 const memoryBankSaveElement = document.getElementById('memory-bank-save') as HTMLButtonElement;
+const memoryBankClearElement = document.getElementById('memory-bank-clear') as HTMLButtonElement;
 const memoryBankCloseElement = document.getElementById('memory-bank-close') as HTMLButtonElement;
 const contextModeIndicatorElement = document.getElementById('context-mode-indicator') as HTMLDivElement;
 
 if (!editorElement || !statsElement || !timerElement || !tokenCounterElement || !costEstimatorElement || 
     !toggleAnalyticsElement || !memoryBankToggleElement || !memoryBankModalElement || 
-    !memoryBankTextareaElement || !memoryBankSaveElement || !memoryBankCloseElement || !contextModeIndicatorElement) {
+    !memoryBankTextareaElement || !memoryBankSaveElement || !memoryBankClearElement || !memoryBankCloseElement || !contextModeIndicatorElement) {
   throw new Error('Critical error: A required element was not found in the DOM.');
 }
 
@@ -149,8 +151,15 @@ const acceptSuggestion = () => {
 
 const createNewInput = (): HTMLElement => {
   const lastElement = editorElement.lastElementChild;
-  if (lastElement && lastElement.tagName !== 'BR') {
-     editorElement.appendChild(document.createElement('br'));
+  
+  // Add proper spacing after saved code blocks
+  if (lastElement && lastElement.classList.contains('saved-to-memory')) {
+    // Add two line breaks for spacing after code blocks
+    editorElement.appendChild(document.createElement('br'));
+    editorElement.appendChild(document.createElement('br'));
+  } else if (lastElement && lastElement.tagName !== 'BR') {
+    // Regular single line break for other elements
+    editorElement.appendChild(document.createElement('br'));
   }
 
   const newInput = document.createElement('span');
@@ -236,6 +245,48 @@ const handleSubmit = async () => {
   }
 };
 
+const extractKeywordsFromMemories = (memories: string): string[] => {
+    if (!memories.trim()) return [];
+    
+    // Split memories into words and phrases
+    const words = memories.toLowerCase()
+        .replace(/[^\w\s]/g, ' ') // Remove punctuation
+        .split(/\s+/)
+        .filter(word => word.length > 3) // Only significant words
+        .filter(word => !['this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'would', 'there', 'could', 'other', 'after', 'first', 'well', 'also', 'where', 'much', 'should', 'these', 'some', 'very', 'what', 'know', 'just', 'into', 'over', 'think', 'only', 'come', 'work', 'life', 'even', 'back', 'want', 'because', 'good', 'make', 'most', 'people', 'many', 'through', 'being', 'before'].includes(word)); // Filter common words
+    
+    // Also extract 2-3 word phrases
+    const phrases: string[] = [];
+    const wordArray = memories.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/);
+    for (let i = 0; i < wordArray.length - 1; i++) {
+        if (wordArray[i].length > 2 && wordArray[i + 1].length > 2) {
+            phrases.push(`${wordArray[i]} ${wordArray[i + 1]}`);
+        }
+        if (i < wordArray.length - 2 && wordArray[i + 2].length > 2) {
+            phrases.push(`${wordArray[i]} ${wordArray[i + 1]} ${wordArray[i + 2]}`);
+        }
+    }
+    
+    return [...new Set([...words, ...phrases])]; // Remove duplicates
+};
+
+const checkMemoryReference = (text: string, memoryKeywords: string[]): boolean => {
+    if (!text || memoryKeywords.length === 0) return false;
+    
+    const lowerText = text.toLowerCase();
+    
+    // Check for exact keyword/phrase matches
+    return memoryKeywords.some(keyword => {
+        if (keyword.includes(' ')) {
+            // For phrases, require exact match
+            return lowerText.includes(keyword);
+        } else {
+            // For single words, check word boundaries
+            return new RegExp(`\\b${keyword}\\b`).test(lowerText);
+        }
+    });
+};
+
 const streamPredictionToGhost = async (
     streamPromise: Promise<AsyncGenerator<GenerateContentResponse>>,
     signal: AbortSignal
@@ -245,16 +296,33 @@ const streamPredictionToGhost = async (
 
     getGhostElement()?.remove();
     const ghostElement = document.createElement('span');
-    ghostElement.className = 'ghost-text';
+    ghostElement.className = 'ghost-text'; // Start with default gray
     activeInput.insertAdjacentElement('afterend', ghostElement);
+
+    // Extract keywords from current memories for matching
+    const memoryKeywords = extractKeywordsFromMemories(currentMemories);
+    console.log('Memory keywords:', memoryKeywords);
+    console.log('Current memories:', currentMemories);
 
     try {
         const streamResponse = await streamPromise;
         let lastResponseChunk: GenerateContentResponse | undefined;
+        let accumulatedText = '';
 
         for await (const chunk of streamResponse) {
             if (signal.aborted) return;
-            ghostElement.textContent = (ghostElement.textContent || '') + (chunk.text || '');
+            
+            const chunkText = chunk.text || '';
+            accumulatedText += chunkText;
+            ghostElement.textContent = accumulatedText;
+            
+            // Check if the accumulated text references memory content
+            const referencesMemory = checkMemoryReference(accumulatedText, memoryKeywords);
+            console.log('Checking text:', accumulatedText, 'References memory:', referencesMemory);
+            
+            // Update class based on memory reference detection
+            ghostElement.className = referencesMemory ? 'ghost-text memory-prediction' : 'ghost-text';
+            
             lastResponseChunk = chunk;
         }
         
@@ -366,10 +434,19 @@ const animateTextSaving = (elements: HTMLElement[]) => {
         setTimeout(() => {
             element.classList.add('saving-to-memory');
             
-            // After animation completes, add permanent saved class
+            // After animation completes, add permanent saved class with code block styling
             setTimeout(() => {
                 element.classList.remove('saving-to-memory');
                 element.classList.add('saved-to-memory');
+                
+                // If this was the active input, make it non-editable and create new input
+                if (element.classList.contains('input-active')) {
+                    element.classList.remove('input-active');
+                    element.setAttribute('contenteditable', 'false');
+                    
+                    // Create new input on next line for continued writing
+                    createNewInput();
+                }
             }, 800);
         }, index * 100); // Stagger the animations
     });
@@ -597,6 +674,19 @@ async function main() {
 
     memoryBankCloseElement.addEventListener('click', () => {
         memoryBankModalElement.classList.add('hidden');
+    });
+
+    memoryBankClearElement.addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear all memories? This cannot be undone.')) {
+            memoryBankTextareaElement.value = '';
+            currentMemories = '';
+            localStorage.removeItem('memories');
+            
+            // Re-initialize chat without memories
+            initializeChat();
+            
+            alert('Memory bank cleared successfully.');
+        }
     });
 
     memoryBankSaveElement.addEventListener('click', async () => {

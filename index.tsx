@@ -7,9 +7,9 @@ import { GoogleGenAI, Chat, UsageMetadata, GenerateContentResponse, Content } fr
 // --- CONFIGURATION ---
 const BASE_SYSTEM_INSTRUCTION = "You are an AI assistant helping a user write. Your primary goal is to provide concise, relevant, and in-context completions for the user's thoughts. You should act as a silent partner, completing sentences or ideas. Do not be conversational. Be a tool. Complete the user's thought based on the current text and the provided memory context. The user is typing, and you are providing a ghost text suggestion for what they might type next. Keep auto suggestions to 3 words max";
 const PLACEHOLDER_TEXT = 'Type something...';
-// Pricing for gemini-2.5-flash model
-const PRICE_PER_INPUT_TOKEN = 0.35 / 1_000_000;
-const PRICE_PER_OUTPUT_TOKEN = 0.70 / 1_000_000;
+// Pricing for gemini-2.5-flash-lite model
+const PRICE_PER_INPUT_TOKEN = 0.10 / 1_000_000;
+const PRICE_PER_OUTPUT_TOKEN = 0.40 / 1_000_000;
 
 // --- DOM ELEMENTS ---
 const editorElement = document.getElementById('editor') as HTMLDivElement;
@@ -23,10 +23,11 @@ const memoryBankModalElement = document.getElementById('memory-bank-modal') as H
 const memoryBankTextareaElement = document.getElementById('memory-bank-textarea') as HTMLTextAreaElement;
 const memoryBankSaveElement = document.getElementById('memory-bank-save') as HTMLButtonElement;
 const memoryBankCloseElement = document.getElementById('memory-bank-close') as HTMLButtonElement;
+const contextModeIndicatorElement = document.getElementById('context-mode-indicator') as HTMLDivElement;
 
 if (!editorElement || !statsElement || !timerElement || !tokenCounterElement || !costEstimatorElement || 
     !toggleAnalyticsElement || !memoryBankToggleElement || !memoryBankModalElement || 
-    !memoryBankTextareaElement || !memoryBankSaveElement || !memoryBankCloseElement) {
+    !memoryBankTextareaElement || !memoryBankSaveElement || !memoryBankCloseElement || !contextModeIndicatorElement) {
   throw new Error('Critical error: A required element was not found in the DOM.');
 }
 
@@ -42,8 +43,26 @@ let totalTokens = 0;
 let totalCost = 0;
 let isStatsVisible = false;
 let currentMemories = '';
+let currentContextMode: 'memory' | 'model' = 'memory';
 
 // --- FUNCTIONS ---
+
+const updateContextModeIndicator = (mode: 'memory' | 'model') => {
+    currentContextMode = mode;
+    
+    if (mode === 'memory') {
+        contextModeIndicatorElement.textContent = '[ Memory Mode ]';
+        contextModeIndicatorElement.classList.remove('model-mode');
+    } else {
+        contextModeIndicatorElement.textContent = '[ Model Mode ]';
+        contextModeIndicatorElement.classList.add('model-mode');
+    }
+};
+
+const toggleContextMode = () => {
+    const newMode = currentContextMode === 'memory' ? 'model' : 'memory';
+    updateContextModeIndicator(newMode);
+};
 
 const initializeChat = async () => {
     const systemInstruction = currentMemories
@@ -51,7 +70,7 @@ const initializeChat = async () => {
         : BASE_SYSTEM_INSTRUCTION;
 
     chat = ai.chats.create({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       config: {
         systemInstruction: systemInstruction,
         thinkingConfig: { thinkingBudget: 0 },
@@ -235,7 +254,7 @@ const streamPredictionToGhost = async (
 
         for await (const chunk of streamResponse) {
             if (signal.aborted) return;
-            ghostElement.textContent += chunk.text;
+            ghostElement.textContent = (ghostElement.textContent || '') + (chunk.text || '');
             lastResponseChunk = chunk;
         }
         
@@ -268,8 +287,24 @@ const startPredictionStream = async () => {
     predictionController = new AbortController();
     const { signal } = predictionController;
 
-    const streamPromise = chat.sendMessageStream({ message: currentText });
-    await streamPredictionToGhost(streamPromise, signal);
+    if (currentContextMode === 'memory') {
+        const streamPromise = chat.sendMessageStream({ message: currentText });
+        await streamPredictionToGhost(streamPromise, signal);
+    } else {
+        // Model mode - use inherent training data only
+        const history = getChatHistoryFromDOM();
+        const contents: Content[] = [...history, { role: 'user', parts: [{ text: currentText }] }];
+
+        const streamPromise = ai.models.generateContentStream({
+            model: 'gemini-2.5-flash-lite',
+            contents: contents,
+            config: {
+                systemInstruction: BASE_SYSTEM_INSTRUCTION,
+                thinkingConfig: { thinkingBudget: 0 },
+            },
+        });
+        await streamPredictionToGhost(streamPromise, signal);
+    }
 };
 
 const getChatHistoryFromDOM = (): Content[] => {
@@ -294,30 +329,7 @@ const getChatHistoryFromDOM = (): Content[] => {
     return history;
 };
 
-const startPredictionWithoutMemory = async () => {
-    const activeInput = getActiveInput();
-    if (!activeInput || activeInput.classList.contains('is-placeholder') || isRequestInProgress) return;
-    
-    const currentText = activeInput.innerText;
-    // No need to check for empty trim, as this is user-invoked
-    
-    predictionController?.abort();
-    predictionController = new AbortController();
-    const { signal } = predictionController;
 
-    const history = getChatHistoryFromDOM();
-    const contents: Content[] = [...history, { role: 'user', parts: [{ text: currentText }] }];
-
-    const streamPromise = ai.models.generateContentStream({
-        model: 'gemini-2.5-flash',
-        contents: contents,
-        config: {
-            systemInstruction: BASE_SYSTEM_INSTRUCTION,
-            thinkingConfig: { thinkingBudget: 0 },
-        },
-    });
-    await streamPredictionToGhost(streamPromise, signal);
-};
 
 const isCursorAtEnd = (element: HTMLElement) => {
     const selection = window.getSelection();
@@ -358,7 +370,7 @@ async function main() {
     }
 
     // Initialize AI
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
     await initializeChat();
 
     // Setup Event Listeners
@@ -413,7 +425,12 @@ async function main() {
 
       if (e.key === '>' && e.shiftKey) {
           e.preventDefault();
-          startPredictionWithoutMemory();
+          updateContextModeIndicator('model');
+          startPredictionStream();
+      } else if (e.key === 'Tab' && e.shiftKey) {
+          e.preventDefault();
+          updateContextModeIndicator('memory');
+          startPredictionStream();
       } else if (e.key === 'Tab' || (e.key === 'ArrowRight' && isCursorAtEnd(activeInput))) {
         if (hasGhostText) {
           e.preventDefault();
@@ -463,6 +480,10 @@ async function main() {
         isStatsVisible = !isStatsVisible;
         statsElement.classList.toggle('hidden', !isStatsVisible);
     });
+
+    contextModeIndicatorElement.addEventListener('click', () => {
+        toggleContextMode();
+    });
     
     memoryBankToggleElement.addEventListener('click', () => {
         memoryBankTextareaElement.value = currentMemories;
@@ -486,6 +507,7 @@ async function main() {
     timerElement.textContent = '0.00s';
     tokenCounterElement.textContent = '0 tokens';
     costEstimatorElement.textContent = '$0.000000';
+    updateContextModeIndicator('memory');
     createNewInput();
 }
 

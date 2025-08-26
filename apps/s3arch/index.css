@@ -17,7 +17,7 @@ html, body {
 #editor {
     flex-grow: 1;
     padding: 3rem;
-    font-size: 2.5rem;
+    font-size: 1.8rem; /* Smaller font size */
     line-height: 1.6;
     overflow-y: auto;
     box-sizing: border-box;
@@ -66,6 +66,71 @@ html, body {
 
 .ghost-text.memory-prediction {
     color: #00E6F5; /* Cyan for memory suggestions */
+}
+
+.socratic-question {
+    color: #FF1493; /* Bright pink color */
+    pointer-events: none;
+    display: inline;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    opacity: 0.9;
+}
+
+@keyframes socraticFadeIn {
+    0% { 
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    100% { 
+        opacity: 0.8;
+        transform: translateY(0);
+    }
+}
+
+.socratic-question {
+    animation: socraticFadeIn 0.5s ease-out;
+}
+
+.socratic-question.memory-reflection {
+    display: block;
+    margin: 0.5em 0;
+    padding: 0.5em 0;
+    background: transparent;
+    border: none;
+    font-size: 1em;
+    line-height: 1.5;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.socratic-question.conversation-reflection {
+    display: block;
+    margin: 0.5em 0;
+    padding: 0.5em 0;
+    background: transparent;
+    border: none;
+    font-size: 1em;
+    line-height: 1.5;
+    opacity: 0.9;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.socratic-question.typing {
+    position: relative;
+}
+
+.socratic-question.typing::after {
+    content: '█';
+    animation: blink 0.8s infinite;
+    color: #FF1493; /* Bright pink cursor */
+}
+
+.cursor-indicator {
+    display: inline-block;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
 }
 
 #stats {

@@ -6,7 +6,7 @@ import { GoogleGenAI, Chat, UsageMetadata, GenerateContentResponse, Content } fr
 
 // --- CONFIGURATION ---
 const BASE_SYSTEM_INSTRUCTION = "You are an AI assistant helping a user write. Your primary goal is to provide concise, relevant, and in-context completions for the user's thoughts. You should act as a silent partner, completing sentences or ideas. Do not be conversational. Be a tool. Complete the user's thought based on the current text and the provided memory context. The user is typing, and you are providing a ghost text suggestion for what they might type next. Keep auto suggestions to 3 words max";
-const PLACEHOLDER_TEXT = 'Type something...';
+const PLACEHOLDER_TEXT = '';
 // Pricing for 
 
 const PRICE_PER_INPUT_TOKEN = 0.10 / 1_000_000;
@@ -26,10 +26,12 @@ const memoryBankSaveElement = document.getElementById('memory-bank-save') as HTM
 const memoryBankClearElement = document.getElementById('memory-bank-clear') as HTMLButtonElement;
 const memoryBankCloseElement = document.getElementById('memory-bank-close') as HTMLButtonElement;
 const contextModeIndicatorElement = document.getElementById('context-mode-indicator') as HTMLDivElement;
+const socraticMemoryToggleElement = document.getElementById('socratic-memory-toggle') as HTMLDivElement;
 
 if (!editorElement || !statsElement || !timerElement || !tokenCounterElement || !costEstimatorElement || 
     !toggleAnalyticsElement || !memoryBankToggleElement || !memoryBankModalElement || 
-    !memoryBankTextareaElement || !memoryBankSaveElement || !memoryBankClearElement || !memoryBankCloseElement || !contextModeIndicatorElement) {
+    !memoryBankTextareaElement || !memoryBankSaveElement || !memoryBankClearElement || !memoryBankCloseElement || 
+    !contextModeIndicatorElement || !socraticMemoryToggleElement) {
   throw new Error('Critical error: A required element was not found in the DOM.');
 }
 
@@ -46,17 +48,21 @@ let totalCost = 0;
 let isStatsVisible = false;
 let currentMemories = '';
 let currentContextMode: 'memory' | 'model' = 'memory';
+let socraticQuestionTimer: ReturnType<typeof setTimeout> | undefined;
+let socraticMemoryEnabled = true;
 
 // --- FUNCTIONS ---
 
 const updateContextModeIndicator = (mode: 'memory' | 'model') => {
     currentContextMode = mode;
     
+    // Clear all mode classes first
+    contextModeIndicatorElement.classList.remove('model-mode', 'web-mode');
+    
     if (mode === 'memory') {
-        contextModeIndicatorElement.textContent = '[ Memory Mode ]';
-        contextModeIndicatorElement.classList.remove('model-mode');
-    } else {
-        contextModeIndicatorElement.textContent = '[ Model Mode ]';
+        contextModeIndicatorElement.textContent = '[ Memory Mode + Web Search ]';
+    } else if (mode === 'model') {
+        contextModeIndicatorElement.textContent = '[ Model Mode + Web Search ]';
         contextModeIndicatorElement.classList.add('model-mode');
     }
 };
@@ -76,6 +82,9 @@ const initializeChat = async () => {
       config: {
         systemInstruction: systemInstruction,
         thinkingConfig: { thinkingBudget: 0 },
+        tools: [{
+            googleSearch: {}
+        }]
       },
     });
 };
@@ -110,6 +119,7 @@ const stopTimer = () => {
 
 const getActiveInput = (): HTMLElement | null => editorElement.querySelector('.input-active');
 const getGhostElement = (): HTMLElement | null => editorElement.querySelector('.ghost-text');
+const getSocraticElement = (): HTMLElement | null => editorElement.querySelector('.socratic-question');
 
 const updateStats = (usage: UsageMetadata) => {
     const inputTokens = usage.promptTokenCount ?? 0;
@@ -136,6 +146,185 @@ const clearSuggestion = () => {
     getGhostElement()?.remove();
 };
 
+const clearSocraticQuestion = () => {
+    getSocraticElement()?.remove();
+    // Also clear memory reflection questions
+    const memoryReflectionElement = editorElement.querySelector('.memory-reflection');
+    memoryReflectionElement?.remove();
+    // Clear conversation reflection questions
+    const conversationReflectionElement = editorElement.querySelector('.conversation-reflection');
+    conversationReflectionElement?.remove();
+    clearTimeout(socraticQuestionTimer);
+};
+
+const animateTyping = (element: HTMLElement, text: string, onComplete?: () => void) => {
+    let i = 0;
+    const typingSpeed = 40; // milliseconds per character - faster typing
+    
+    // Clear existing content - no emoji
+    element.textContent = '';
+    element.classList.add('typing');
+    
+    const typeWriter = () => {
+        if (i < text.length) {
+            element.textContent = text.substring(0, i + 1);
+            i++;
+            setTimeout(typeWriter, typingSpeed);
+        } else {
+            // Typing complete
+            element.classList.remove('typing');
+            if (onComplete) {
+                onComplete();
+            }
+        }
+    };
+    
+    // Start typing immediately
+    typeWriter();
+};
+
+const generateStartupMemoryQuestion = async (memories: string): Promise<string> => {
+    try {
+        const prompt = `Based on this memory bank, generate ONE specific, insightful "Why?" question that would help the person continue their thinking from where they left off.
+
+The question should:
+- Reference specific themes or ideas from their memories
+- Help them dive back into their previous line of thought
+- Be genuinely thought-provoking and re-engaging
+- Start with "Why"
+- Be concise (under 20 words)
+
+Memory Bank:
+${memories.slice(-1000)}
+
+Generate only the question, nothing else:`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-lite',
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: {
+                systemInstruction: "You are a socratic questioning expert. Generate precise, contextual 'Why?' questions that help people re-engage with their previous thinking.",
+                thinkingConfig: { thinkingBudget: 0 }
+            }
+        });
+
+        const question = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        
+        // Fallback if AI fails
+        if (!question || !question.toLowerCase().startsWith('why')) {
+            return 'Why are you returning to these thoughts today?';
+        }
+        
+        return question;
+    } catch (error) {
+        console.error('Error generating startup memory question:', error);
+        return 'Why are you returning to these thoughts today?';
+    }
+};
+
+const generateAIWhyQuestion = async (text: string, conversationHistory: string, memories: string): Promise<string> => {
+    try {
+        // Build context for the AI to understand what to question
+        let context = `Recent input: "${text}"\n\n`;
+        
+        if (conversationHistory && conversationHistory.length > 50) {
+            context += `Conversation context:\n${conversationHistory.slice(-800)}\n\n`;
+        }
+        
+        if (socraticMemoryEnabled && memories) {
+            context += `Memory bank context:\n${memories.slice(-500)}\n\n`;
+        }
+        
+        const prompt = `Based on this context, generate ONE specific, insightful "Why?" question that would help the person think deeper about their most recent input. 
+
+The question should:
+- Reference specific content from their input (not generic)
+- Challenge assumptions or explore reasoning
+- Be genuinely thought-provoking
+- Start with "Why"
+- Be concise (under 15 words)
+
+Context:
+${context}
+
+Generate only the question, nothing else:`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-lite',
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: {
+                systemInstruction: "You are a socratic questioning expert. Generate precise, contextual 'Why?' questions that reference specific content.",
+                thinkingConfig: { thinkingBudget: 0 }
+            }
+        });
+
+        const question = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        
+        // Fallback to simple question if AI fails
+        if (!question || !question.toLowerCase().startsWith('why')) {
+            return `Why ${text.length > 30 ? 'are you exploring this idea' : 'does this matter to you'}?`;
+        }
+        
+        return question;
+    } catch (error) {
+        console.error('Error generating AI Why question:', error);
+        return `Why ${text.length > 30 ? 'are you exploring this idea' : 'does this matter to you'}?`;
+    }
+};
+
+
+
+const showStartupMemoryQuestion = async (memories: string) => {
+    // Generate AI-powered contextual Why question for startup
+    const startupQuestion = await generateStartupMemoryQuestion(memories);
+    
+    // Create socratic question element with typing animation
+    const socraticElement = document.createElement('div');
+    socraticElement.className = 'socratic-question memory-reflection';
+    socraticElement.style.display = 'block';
+    socraticElement.style.marginTop = '1em';
+    socraticElement.style.marginBottom = '0.5em';
+    
+    editorElement.appendChild(socraticElement);
+    
+    // Animate typing the question
+    setTimeout(() => {
+        animateTyping(socraticElement, startupQuestion, () => {
+            // After typing completes, create new input with cursor indicator below the question
+            createNewInputWithCursor();
+        });
+    }, 1000);
+    
+    // Scroll to show the question
+    editorElement.scrollTop = editorElement.scrollHeight;
+};
+
+const showMemorySocraticQuestion = async (savedContext: string) => {
+    // Generate AI-powered contextual Why question for memory saves
+    const conversationHistory = editorElement.innerText || '';
+    const aiQuestion = await generateAIWhyQuestion(savedContext, conversationHistory, currentMemories);
+    
+    // Create socratic question element with typing animation
+    const socraticElement = document.createElement('div');
+    socraticElement.className = 'socratic-question memory-reflection';
+    socraticElement.style.display = 'block';
+    socraticElement.style.marginTop = '1em';
+    socraticElement.style.marginBottom = '0.5em';
+    
+    editorElement.appendChild(socraticElement);
+    
+    // Animate typing the question
+    setTimeout(() => {
+        animateTyping(socraticElement, aiQuestion, () => {
+            // After typing completes, create new input with cursor indicator below the question
+            createNewInputWithCursor();
+        });
+    }, 500);
+    
+    // Scroll to show the question
+    editorElement.scrollTop = editorElement.scrollHeight;
+};
+
 const acceptSuggestion = () => {
     const activeInput = getActiveInput();
     const ghostElement = getGhostElement();
@@ -149,7 +338,19 @@ const acceptSuggestion = () => {
     moveCursorToEnd(activeInput);
 };
 
+const createNewInputWithCursor = () => {
+    // Just create the input directly - no cursor indicator needed
+    createNewInput();
+};
+
 const createNewInput = (): HTMLElement => {
+  // Check if there's already an active input - if so, remove it to prevent duplicates
+  const existingActiveInput = getActiveInput();
+  if (existingActiveInput) {
+    console.warn('Removing existing active input to prevent duplicates');
+    existingActiveInput.remove();
+  }
+  
   const lastElement = editorElement.lastElementChild;
   
   // Add proper spacing after saved code blocks
@@ -243,6 +444,85 @@ const handleSubmit = async () => {
     createNewInput();
     editorElement.scrollTop = editorElement.scrollHeight;
   }
+};
+
+const handleSubmitWithSocraticQuestion = async () => {
+  const activeInput = getActiveInput();
+  if (!activeInput || activeInput.classList.contains('is-placeholder')) return;
+  
+  const userInput = activeInput.innerText.trim();
+  if (!userInput) return;
+
+  // First submit to conversation (this creates AI response + new input)
+  await handleSubmit();
+  
+  // Then generate socratic question after 3 seconds
+  // The question should appear BEFORE the new input that handleSubmit created
+  setTimeout(() => {
+    showConversationSocraticQuestionInFlow(userInput);
+  }, 3000);
+};
+
+const showConversationSocraticQuestionInFlow = async (userInput: string) => {
+    // Generate AI-powered contextual Why question for conversation
+    const conversationHistory = editorElement.innerText || '';
+    const aiQuestion = await generateAIWhyQuestion(userInput, conversationHistory, currentMemories);
+    
+    // Remove the current active input that handleSubmit created
+    const currentActiveInput = getActiveInput();
+    if (currentActiveInput) {
+        currentActiveInput.remove();
+    }
+    
+    // Create socratic question element with typing animation
+    const socraticElement = document.createElement('div');
+    socraticElement.className = 'socratic-question conversation-reflection';
+    socraticElement.style.display = 'block';
+    socraticElement.style.marginTop = '1em';
+    socraticElement.style.marginBottom = '0.5em';
+    
+    // Append question to the end (after AI response)
+    editorElement.appendChild(socraticElement);
+    
+    // Animate typing the question
+    setTimeout(() => {
+        animateTyping(socraticElement, aiQuestion, () => {
+            // After typing completes, create new input below the question
+            createNewInputWithCursor();
+        });
+    }, 500);
+    
+    // Scroll to show the question
+    editorElement.scrollTop = editorElement.scrollHeight;
+};
+
+const showConversationSocraticQuestion = async (userInput: string) => {
+    // Generate AI-powered contextual Why question for conversation
+    const conversationHistory = editorElement.innerText || '';
+    const aiQuestion = await generateAIWhyQuestion(userInput, conversationHistory, currentMemories);
+    
+    // Create socratic question element with typing animation
+    const socraticElement = document.createElement('div');
+    socraticElement.className = 'socratic-question conversation-reflection';
+    socraticElement.style.display = 'block';
+    socraticElement.style.marginTop = '1em';
+    socraticElement.style.marginBottom = '0.5em';
+    
+    editorElement.appendChild(socraticElement);
+    
+    // Animate typing the question
+    setTimeout(() => {
+        animateTyping(socraticElement, aiQuestion, () => {
+            // After typing completes, only create new input if none exists
+            if (!getActiveInput()) {
+                createNewInput();
+            }
+            // Questions persist - no auto-removal
+        });
+    }, 500);
+    
+    // Scroll to show the question
+    editorElement.scrollTop = editorElement.scrollHeight;
 };
 
 const extractKeywordsFromMemories = (memories: string): string[] => {
@@ -359,7 +639,7 @@ const startPredictionStream = async () => {
         const streamPromise = chat.sendMessageStream({ message: currentText });
         await streamPredictionToGhost(streamPromise, signal);
     } else {
-        // Model mode - use inherent training data only
+        // Model mode - use inherent training data only (but still has web search available)
         const history = getChatHistoryFromDOM();
         const contents: Content[] = [...history, { role: 'user', parts: [{ text: currentText }] }];
 
@@ -369,6 +649,9 @@ const startPredictionStream = async () => {
             config: {
                 systemInstruction: BASE_SYSTEM_INSTRUCTION,
                 thinkingConfig: { thinkingBudget: 0 },
+                tools: [{
+                    googleSearch: {}
+                }]
             },
         });
         await streamPredictionToGhost(streamPromise, signal);
@@ -509,6 +792,16 @@ const saveContextToMemoryBank = async () => {
         memoryBankToggleElement.style.boxShadow = '';
         memoryBankToggleElement.style.transform = '';
     }, 400);
+    
+    // Generate socratic question after 3 seconds
+    setTimeout(() => {
+        // Remove any existing active input first to prevent multiple inputs
+        const existingActiveInput = getActiveInput();
+        if (existingActiveInput) {
+            existingActiveInput.remove();
+        }
+        showMemorySocraticQuestion(currentContext);
+    }, 3000);
 };
 
 
@@ -555,6 +848,14 @@ async function main() {
     ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY });
     await initializeChat();
 
+    // Check if we have memories and show startup question
+    if (currentMemories && currentMemories.trim().length > 50) {
+        // Wait a moment for the UI to settle, then show the startup question
+        setTimeout(() => {
+            showStartupMemoryQuestion(currentMemories);
+        }, 1000);
+    }
+
     // Setup Event Listeners
     editorElement.addEventListener('input', (e) => {
         const target = e.target as HTMLElement;
@@ -567,6 +868,7 @@ async function main() {
         
         clearTimeout(predictionDebounceTimer);
         clearSuggestion();
+        
         predictionDebounceTimer = setTimeout(startPredictionStream, 300);
     });
 
@@ -603,7 +905,9 @@ async function main() {
       }
 
       const ghostElement = getGhostElement();
+      const socraticElement = getSocraticElement();
       const hasGhostText = ghostElement && ghostElement.innerText.trim() !== '';
+      const hasSocraticQuestion = socraticElement && socraticElement.innerText.trim() !== '';
 
       if (e.key === '>' && e.shiftKey) {
           e.preventDefault();
@@ -622,12 +926,14 @@ async function main() {
           // Tab alone no longer submits - only accepts suggestions
         }
       } else if (e.key === 'Escape') {
-        if (hasGhostText) {
+        if (hasGhostText || hasSocraticQuestion) {
           e.preventDefault();
           clearSuggestion();
+          clearSocraticQuestion();
         }
       } else if (e.key.length > 1 && e.key !== 'Backspace' && e.key !== 'Delete') {
         clearSuggestion();
+        // Don't clear socratic questions on regular typing
       }
     });
 
@@ -635,6 +941,7 @@ async function main() {
       const target = e.target as HTMLElement;
       if (target.matches('.input-active')) {
         clearSuggestion();
+        // Don't clear socratic questions on blur - let them persist
         setupPlaceholder(target);
       }
     }, true);
@@ -665,6 +972,14 @@ async function main() {
 
     contextModeIndicatorElement.addEventListener('click', () => {
         toggleContextMode();
+    });
+
+    // Socratic memory toggle click handler
+    socraticMemoryToggleElement.addEventListener('click', () => {
+        socraticMemoryEnabled = !socraticMemoryEnabled;
+        socraticMemoryToggleElement.textContent = socraticMemoryEnabled 
+            ? '[ Why? Memory: On ]' 
+            : '[ Why? Memory: Off ]';
     });
     
     memoryBankToggleElement.addEventListener('click', () => {
@@ -698,12 +1013,20 @@ async function main() {
         handleClearEditor();
     });
 
-    // Global keyboard event listener for Command+Return
+    // Global keyboard event listener for Enter and Command+Return
     document.addEventListener('keydown', (e) => {
-        // Command+Return (Cmd+Return on Mac)
+        // Command+Return (Cmd+Return on Mac) - Save to memory
         if ((e.key === 'Enter' || e.key === 'Return') && e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey) {
             e.preventDefault();
             saveContextToMemoryBank();
+        }
+        // Regular Enter - Submit to conversation
+        else if ((e.key === 'Enter' || e.key === 'Return') && !e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey) {
+            const activeInput = getActiveInput();
+            if (activeInput && !activeInput.classList.contains('is-placeholder')) {
+                e.preventDefault();
+                handleSubmitWithSocraticQuestion();
+            }
         }
     });
 

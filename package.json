@@ -1,19 +1,27 @@
 {
-  "name": "thought-computer",
+  "name": "s3arch-monorepo",
+  "version": "1.0.0",
+  "description": "S3ARCH - Predictive Intelligence Test Monorepo",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@google/genai": "^0.12.0"
+    "dev:s3arch": "cd apps/s3arch && npm run dev",
+    "dev:tim3": "cd apps/tim3 && npm run dev",
+    "build:s3arch": "cd apps/s3arch && npm run build",
+    "build:tim3": "cd apps/tim3 && npm run build",
+    "build:all": "npm run build:s3arch && npm run build:tim3",
+    "install:all": "npm install && npm run install:workspaces",
+    "install:workspaces": "npm install --workspaces"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "typescript": "~5.7.2",
-    "vite": "^6.2.0"
+    "typescript": "~5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }
+

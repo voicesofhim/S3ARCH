@@ -78,7 +78,27 @@ This folder contains the comprehensive planning documentation for the TIM3 appli
 ## Ready for Claude Code
 This plan is now complete and ready to be shared with Claude Code for implementation guidance. All sections contain comprehensive information needed to begin development of the TIM3 application on Arweave's permaweb.
 
+## 🚨 **Critical: Documentation Continuity System**
+
+**EVERY Claude instance must read and follow documentation update requirements:**
+
+### **Mandatory Reading Order**
+1. **First**: `apps/tim3/CLAUDE_INSTRUCTIONS.md` - Documentation update requirements
+2. **Second**: `apps/tim3/STATUS.md` - Current status snapshot  
+3. **Third**: `apps/tim3/IMPLEMENTATION_LOG.md` - Progress history
+4. **Fourth**: This handoff document - Original requirements
+
+### **Mandatory Documentation Updates**
+**Every Claude session MUST update:**
+- `apps/tim3/STATUS.md` - Current status after each session
+- `apps/tim3/IMPLEMENTATION_LOG.md` - Detailed progress history
+- Planning docs in `plan/` when major milestones complete
+
+### **Context Continuity Guarantee**
+This system ensures NO context is ever lost between Claude sessions. User can always continue development with full context preservation.
+
 ---
-*Last Updated: [Current Date]*
-*Status: Planning Complete - Ready for Implementation*
+*Last Updated: August 26, 2025*
+*Status: Advanced Implementation In Progress - Mock USDA Complete, Coordinator Next*
+*Documentation System: Active and Mandatory*
 

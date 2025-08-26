@@ -447,8 +447,13 @@ Mint TIM3 → State Check → Token Handler → Wallet Update
 
 ## 🎯 **Claude's Next Steps**
 
+### **🚨 FIRST: Read Development Instructions**
+**Before doing ANY work, read `apps/tim3/CLAUDE_INSTRUCTIONS.md`**
+This file contains mandatory documentation update requirements.
+
 ### **1. Analyze This Package (Planning Mode)**
 - Read through all research and context
+- **Read STATUS.md and IMPLEMENTATION_LOG.md first**
 - Understand the architecture decisions
 - Identify potential challenges and questions
 - Plan the implementation approach
@@ -464,12 +469,21 @@ Mint TIM3 → State Check → Token Handler → Wallet Update
 - Build TIM3 AO processes
 - Create React frontend
 - Test and validate functionality
+- **UPDATE STATUS.md and IMPLEMENTATION_LOG.md during work**
 
 ### **4. Iterate and Improve**
 - Test each component thoroughly
 - Validate against requirements
 - Optimize performance and security
 - Prepare for deployment
+- **UPDATE all planning docs when milestones complete**
+
+### **5. Documentation Discipline**
+**EVERY Claude session must:**
+- Update STATUS.md with progress
+- Update IMPLEMENTATION_LOG.md with details
+- Recommend git commits including doc updates
+- Maintain context continuity for future sessions
 
 ---
 

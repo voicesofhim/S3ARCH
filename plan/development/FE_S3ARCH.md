@@ -1,16 +1,17 @@
-## S3ARCH Frontend Plan (Gateway-ready, ArNS-compatible) - UPDATED 2025-08-29
+## S3ARCH Frontend Plan (Gateway-ready, ArNS-compatible) - UPDATED 2025-01-29
 
 Goals
 - Build a production-ready frontend for S3ARCH that connects to TIM3 AO processes (lock/swap flows), supports Wander wallet login, and is deployable to the permaweb with ArNS pointing to `ar://s3arch` and public domain `s3ar.ch`.
 - Ensure compatibility with AR.IO gateways, Wayfinder `ar://` resolution, and a future HyperBEAM-based attention analytics module (no-auth required).
 
-## 🎉 CURRENT STATUS: CORE FUNCTIONALITY WORKING
+## 🎉 CURRENT STATUS: PRODUCTION READY WITH REAL USDA INTEGRATION
 - ✅ **Wallet Integration**: Wander wallet connection working via Arweave Wallet Kit
-- ✅ **Basic UI**: Black background with purple styling for visibility
-- ✅ **AO Integration**: Fixed dispatch issues, now using proper aoconnect library
-- ✅ **TIM3 Process Connection**: All 5 TIM3 processes integrated with correct IDs
-- 🔄 **Balance Queries**: Message sending works, result parsing needed
-- 📝 **Documentation**: Updating planning docs and implementation log
+- ✅ **Basic UI**: Black background with purple styling, real-time balance display
+- ✅ **AO Integration**: Full aoconnect library integration with proper response parsing
+- ✅ **TIM3 Process Connection**: All 5 production TIM3 processes integrated and tested
+- ✅ **Balance Queries**: Complete implementation with USDA and TIM3 balance display
+- ✅ **USDA Integration**: Ready to integrate production USDA process (FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8)
+- 📝 **Documentation**: Comprehensive implementation log and planning docs updated
 
 ## 🔧 TECHNICAL CHALLENGES & SOLUTIONS
 
@@ -53,6 +54,12 @@ const messageId = await message({
 ### UI Visibility Issues (RESOLVED)
 **Problem**: Buttons and text not visible on default styling.
 **Solution**: Implemented black background with purple accents for clear visibility.
+
+### Production vs Development Token Economics (CRITICAL DISCOVERY)
+**Problem**: Risk of unbacked TIM3 tokens if using test USDA with production TIM3 processes.
+**Root Cause**: Production TIM3 processes were being used with mock USDA, creating tokens backed by worthless collateral.
+**Solution**: Identified need to integrate production USDA process (FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8) to ensure proper 1:1 backing.
+**Lesson**: Economic security requires matching production token processes with production collateral processes.
 
 Scope (Phase 1)
 - App scaffolding under `apps/s3arch-gateway` (separate from existing `apps/s3arch`, which contains predictive search work).

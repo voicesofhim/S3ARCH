@@ -1,4 +1,4 @@
-import { message, createDataItemSigner } from '@permaweb/aoconnect'
+import { message, result, createDataItemSigner } from '@permaweb/aoconnect'
 
 type TagMap = Record<string, string | number | boolean>
 
@@ -50,27 +50,82 @@ export async function queryBalance(processId: string, scheduler: string, target:
     console.log('Process ID:', processId)
     console.log('Target:', target)
     
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise<string>((_, reject) => {
-      setTimeout(() => reject(new Error('Balance query timed out after 15 seconds')), 15000)
-    })
-    
-    const queryPromise = sendAOMessage({
+    // Step 1: Send the balance query message
+    console.log('Sending balance query message...')
+    const messageId = await sendAOMessage({
       processId,
       action: 'Balance',
       tags: { Target: target },
-    }).then(messageId => {
-      console.log('Balance query message sent, ID:', messageId)
-      // For now, return a success message since we don't have result parsing yet
-      // In a real implementation, you'd use the messageId to fetch the result
-      return `Balance query sent successfully (Message ID: ${messageId.slice(0, 8)}...)`
+    })
+    
+    console.log('Balance query message sent, ID:', messageId)
+    console.log('Waiting for response from AO process...')
+    
+    // Step 2: Wait for the result from the AO process
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Balance query result timed out after 20 seconds')), 20000)
+    })
+    
+    const resultPromise = result({
+      message: messageId,
+      process: processId,
+    }).then((res: any) => {
+      console.log('Raw AO result:', res)
+      
+      // Parse the result to extract balance information
+      if (res?.Messages && res.Messages.length > 0) {
+        const responseMessage = res.Messages[0]
+        console.log('Response message:', responseMessage)
+        
+        // Look for balance in the response data or tags
+        if (responseMessage.Data) {
+          try {
+            const data = JSON.parse(responseMessage.Data)
+            console.log('Parsed response data:', data)
+            
+            // Try different balance field names and formats
+            let balanceValue = null
+            let ticker = 'tokens'
+            
+            if (data.balance !== undefined) {
+              balanceValue = data.balance
+              ticker = data.ticker || 'TIM3'
+            } else if (data.Balance !== undefined) {
+              balanceValue = data.Balance
+              ticker = data.ticker || 'TIM3'
+            } else if (data.available !== undefined) {
+              balanceValue = data.available
+              ticker = 'USDA'
+            }
+            
+            if (balanceValue !== null) {
+              console.log('Balance found:', balanceValue, ticker)
+              return `${balanceValue} ${ticker}`
+            }
+          } catch (e) {
+            // If not JSON, treat as plain text
+            console.log('Response data (plain text):', responseMessage.Data)
+            return responseMessage.Data
+          }
+        }
+        
+        // Check tags for balance info
+        const balanceTag = responseMessage.Tags?.find((tag: any) => tag.name === 'Balance')
+        if (balanceTag) {
+          return `${balanceTag.value} TIM3`
+        }
+        
+        return 'Balance query completed, but no balance found in response'
+      }
+      
+      return 'No response messages received from AO process'
     })
 
-    console.log('Sending balance query...')
-    const result = await Promise.race([queryPromise, timeoutPromise])
-    console.log('Balance query completed, result:', result)
+    console.log('Waiting for AO process response...')
+    const balanceResult = await Promise.race([resultPromise, timeoutPromise])
+    console.log('Balance query completed, result:', balanceResult)
     
-    return result
+    return balanceResult
   } catch (error) {
     console.error('Balance query error:', error)
     throw error

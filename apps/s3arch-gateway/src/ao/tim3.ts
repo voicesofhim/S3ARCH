@@ -1,5 +1,5 @@
 import { TIM3_PROCESSES, ENVIRONMENT } from './processes'
-import { sendAOMessage } from './client'
+import { sendAOMessage, queryBalance } from './client'
 
 // Mint flow is initiated via the Coordinator by sending Action MintTIM3
 // with TIM3 amount in Tags (Amount or Quantity). The coordinator then
@@ -14,11 +14,11 @@ export async function requestMintTIM3(tim3Amount: string) {
 
 // Query USDA balance (adapts to environment)
 export async function getUSDABalance(target: string) {
-  return sendAOMessage({
-    processId: TIM3_PROCESSES.usda.processId,
-    action: 'Balance',
-    tags: { Target: target },
-  })
+  return queryBalance(
+    TIM3_PROCESSES.usda.processId,
+    TIM3_PROCESSES.usda.scheduler,
+    target
+  )
 }
 
 // Mint test USDA tokens (only available in test environment)
@@ -68,6 +68,61 @@ export async function requestBurnTIM3(tim3Amount: string) {
     processId: TIM3_PROCESSES.coordinator.processId,
     action: 'BurnTIM3',
     tags: { Amount: tim3Amount },
+  })
+}
+
+// Get TIM3 balance from the Token Manager
+export async function getTIM3Balance(target: string) {
+  return queryBalance(
+    TIM3_PROCESSES.tokenManager.processId,
+    TIM3_PROCESSES.tokenManager.scheduler,
+    target
+  )
+}
+
+// Configure all test processes to work together (Coordinator, Lock Manager, Token Manager, Mock USDA)
+export async function configureAllProcesses() {
+  // 1) Configure Coordinator with all dependent processes
+  await sendAOMessage({
+    processId: TIM3_PROCESSES.coordinator.processId,
+    action: 'SetProcessConfig',
+    tags: {
+      MockUsdaProcess: TIM3_PROCESSES.usda.processId,
+      StateManagerProcess: TIM3_PROCESSES.stateManager.processId,
+      LockManagerProcess: TIM3_PROCESSES.lockManager.processId,
+      TokenManagerProcess: TIM3_PROCESSES.tokenManager.processId,
+    },
+  })
+
+  // 2) Configure Lock Manager to trust the Coordinator and know Mock USDA
+  await sendAOMessage({
+    processId: TIM3_PROCESSES.lockManager.processId,
+    action: 'Configure',
+    tags: { ConfigType: 'CoordinatorProcess', Value: TIM3_PROCESSES.coordinator.processId },
+  })
+  await sendAOMessage({
+    processId: TIM3_PROCESSES.lockManager.processId,
+    action: 'Configure',
+    tags: { ConfigType: 'MockUsdaProcess', Value: TIM3_PROCESSES.usda.processId },
+  })
+  // Optional: provide state manager reference if needed by your flows
+  await sendAOMessage({
+    processId: TIM3_PROCESSES.lockManager.processId,
+    action: 'Configure',
+    tags: { ConfigType: 'StateManagerProcess', Value: TIM3_PROCESSES.stateManager.processId },
+  })
+
+  // 3) Configure Token Manager to trust the Coordinator
+  await sendAOMessage({
+    processId: TIM3_PROCESSES.tokenManager.processId,
+    action: 'Configure',
+    tags: { ConfigType: 'CoordinatorProcess', Value: TIM3_PROCESSES.coordinator.processId },
+  })
+  // Optional: provide state manager reference
+  await sendAOMessage({
+    processId: TIM3_PROCESSES.tokenManager.processId,
+    action: 'Configure',
+    tags: { ConfigType: 'StateManagerProcess', Value: TIM3_PROCESSES.stateManager.processId },
   })
 }
 

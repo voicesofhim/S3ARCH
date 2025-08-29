@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { requestMintTIM3 } from '../ao/tim3'
+import { useEffect, useState } from 'react'
+import { requestMintTIM3, mintTestUSDA, getUSDABalance, getTIM3Balance, configureAllProcesses } from '../ao/tim3'
 import { useArweaveWallet } from '../wallet/useArweaveWallet'
 import { ENVIRONMENT } from '../ao/processes'
 
@@ -7,6 +7,8 @@ export default function Tim3() {
   const { address, isConnected, connect } = useArweaveWallet()
   const [usdaAmount, setUsdaAmount] = useState('')
   const [status, setStatus] = useState<string | null>(null)
+  const [usdaBalance, setUsdaBalance] = useState<string | null>(null)
+  const [tim3Balance, setTim3Balance] = useState<string | null>(null)
 
   const handleSwap = async () => {
     try {
@@ -20,10 +22,35 @@ export default function Tim3() {
       setStatus('Submitting swap (USDA -> TIM3)…')
       await requestMintTIM3(usdaAmount)
       setStatus('Swap submitted. Check balances shortly.')
+      setTimeout(() => {
+        refreshBalances()
+      }, 2500)
     } catch (e: any) {
       setStatus(`Error: ${e?.message ?? 'unknown'}`)
     }
   }
+
+  const refreshBalances = async () => {
+    if (!isConnected || !address) return
+    try {
+      setStatus('Refreshing balances...')
+      const [usda, tim3] = await Promise.all([
+        getUSDABalance(address),
+        getTIM3Balance(address)
+      ])
+      setUsdaBalance(usda)
+      setTim3Balance(tim3)
+      setStatus('Balances updated')
+    } catch (e: any) {
+      setStatus(`Balance refresh error: ${e?.message ?? 'unknown'}`)
+    }
+  }
+
+  useEffect(() => {
+    if (isConnected && address) {
+      refreshBalances()
+    }
+  }, [isConnected, address])
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
@@ -99,7 +126,7 @@ export default function Tim3() {
               {ENVIRONMENT === 'test' ? '(TEST) USDA' : 'USDA'}
             </div>
           </div>
-          <div style={{ color: '#6b7280', fontSize: 12, marginTop: 6 }}>0.00 | {ENVIRONMENT === 'test' ? '(TEST) USDA' : 'USDA'}</div>
+          <div style={{ color: '#6b7280', fontSize: 12, marginTop: 6 }}>{usdaBalance || '0.00'} | {ENVIRONMENT === 'test' ? '(TEST) USDA' : 'USDA'}</div>
         </div>
 
         <hr style={{ borderColor: '#222', margin: '18px 0' }} />
@@ -138,7 +165,7 @@ export default function Tim3() {
               {ENVIRONMENT === 'test' ? '(TEST) TIM3' : 'TIM3'}
             </div>
           </div>
-          <div style={{ color: '#6b7280', fontSize: 12, marginTop: 6 }}>0.00 | {ENVIRONMENT === 'test' ? '(TEST) TIM3' : 'TIM3'}</div>
+          <div style={{ color: '#6b7280', fontSize: 12, marginTop: 6 }}>{tim3Balance || '0.00'} | {ENVIRONMENT === 'test' ? '(TEST) TIM3' : 'TIM3'}</div>
         </div>
 
         {/* Action Button */}
@@ -196,6 +223,45 @@ export default function Tim3() {
             fontSize: 13
           }}>
             {status}
+          </div>
+        )}
+
+        {/* Test Utilities */}
+        {ENVIRONMENT === 'test' && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                onClick={async () => {
+                  try {
+                    setStatus('Configuring all test processes...')
+                    await configureAllProcesses()
+                    setStatus('✅ Configured test processes')
+                  } catch (e: any) {
+                    setStatus(`Config error: ${e?.message ?? 'unknown'}`)
+                  }
+                }}
+                style={{ padding: '8px 12px' }}
+              >
+                🔧 Configure Test Processes
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    if (!isConnected) await connect()
+                    setStatus('Minting test USDA...')
+                    await mintTestUSDA('1000')
+                    setStatus('✅ Test USDA minted')
+                    setTimeout(() => refreshBalances(), 2000)
+                  } catch (e: any) {
+                    setStatus(`Mint error: ${e?.message ?? 'unknown'}`)
+                  }
+                }}
+                style={{ padding: '8px 12px' }}
+              >
+                🧪 Mint 1000 Test USDA
+              </button>
+              <button onClick={refreshBalances} style={{ padding: '8px 12px' }}>↻ Refresh Balances</button>
+            </div>
           </div>
         )}
       </div>

@@ -16,7 +16,6 @@ export async function requestMintTIM3(tim3Amount: string) {
 export async function getUSDABalance(target: string) {
   return queryBalance(
     TIM3_PROCESSES.usda.processId,
-    TIM3_PROCESSES.usda.scheduler,
     target
   )
 }
@@ -46,6 +45,9 @@ export async function getCoordinatorStatus() {
 
 // Configure coordinator with appropriate USDA process (adapts to environment)
 export async function configureCoordinator() {
+  if (ENVIRONMENT !== 'test') {
+    return Promise.reject(new Error('Refusing to configure coordinator in production environment'))
+  }
   return sendAOMessage({
     processId: TIM3_PROCESSES.coordinator.processId,
     action: 'SetMockUsdaProcess',
@@ -75,13 +77,15 @@ export async function requestBurnTIM3(tim3Amount: string) {
 export async function getTIM3Balance(target: string) {
   return queryBalance(
     TIM3_PROCESSES.tokenManager.processId,
-    TIM3_PROCESSES.tokenManager.scheduler,
     target
   )
 }
 
 // Configure all test processes to work together (Coordinator, Lock Manager, Token Manager, Mock USDA)
 export async function configureAllProcesses() {
+  if (ENVIRONMENT !== 'test') {
+    return Promise.reject(new Error('Refusing to configure processes in production environment'))
+  }
   // 1) Configure Coordinator with all dependent processes
   await sendAOMessage({
     processId: TIM3_PROCESSES.coordinator.processId,

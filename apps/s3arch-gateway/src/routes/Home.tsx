@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useArweaveWallet } from '../wallet/useArweaveWallet'
 import { TIM3_PROCESSES, ENVIRONMENT } from '../ao/processes'
 import { queryBalance } from '../ao/client'
-import { mintTestUSDA, getUSDABalance, getCoordinatorStatus, configureCoordinator, getCoordinatorConfig } from '../ao/tim3'
+import { mintTestUSDA, getCoordinatorStatus, configureCoordinator, getCoordinatorConfig } from '../ao/tim3'
 
 export default function Home() {
   const { address, isConnected, connect, disconnect } = useArweaveWallet()
@@ -24,7 +24,6 @@ export default function Home() {
       
       const balance = await queryBalance(
         TIM3_PROCESSES.tokenManager.processId,
-        TIM3_PROCESSES.tokenManager.scheduler,
         address
       )
       
@@ -51,7 +50,6 @@ export default function Home() {
       
       const balance = await queryBalance(
         TIM3_PROCESSES.usda.processId,
-        TIM3_PROCESSES.usda.scheduler,
         address
       )
       

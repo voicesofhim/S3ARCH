@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useArweaveWallet } from '../wallet/useArweaveWallet'
-import { TIM3_PROCESSES } from '../ao/processes'
+import { TIM3_PROCESSES, ENVIRONMENT } from '../ao/processes'
 import { queryBalance } from '../ao/client'
 import { mintTestUSDA, getUSDABalance, getCoordinatorStatus, configureCoordinator, getCoordinatorConfig } from '../ao/tim3'
 
@@ -50,8 +50,8 @@ export default function Home() {
       setError(null)
       
       const balance = await queryBalance(
-        TIM3_PROCESSES.mockUsda.processId,
-        TIM3_PROCESSES.mockUsda.scheduler,
+        TIM3_PROCESSES.usda.processId,
+        TIM3_PROCESSES.usda.scheduler,
         address
       )
       
@@ -153,6 +153,19 @@ export default function Home() {
     <div style={{ padding: 24 }}>
       <h2>S3ARCH Gateway</h2>
       
+      {/* Environment Indicator */}
+      <div style={{ 
+        marginBottom: 16, 
+        padding: '8px 12px',
+        backgroundColor: ENVIRONMENT === 'test' ? '#ffc107' : '#28a745',
+        color: '#000',
+        borderRadius: 4,
+        fontWeight: 'bold',
+        display: 'inline-block'
+      }}>
+        {ENVIRONMENT === 'test' ? '🧪 TEST MODE' : '🏛️ PRODUCTION MODE'}
+      </div>
+      
       <div style={{ marginBottom: 16 }}>
         <strong>Wallet Status:</strong>
         {!isConnected && <span> Ready (not connected)</span>}
@@ -208,46 +221,66 @@ export default function Home() {
               
               <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', color: '#888', marginBottom: 4 }}>USDA Balance</div>
+                  <div style={{ fontSize: '14px', color: '#888', marginBottom: 4 }}>
+                    {ENVIRONMENT === 'test' ? '(TEST) USDA Balance' : 'USDA Balance'}
+                  </div>
                   <div style={{ 
                     fontSize: '20px', 
                     fontWeight: 'bold', 
                     color: usdaBalance && usdaBalance !== '0' ? '#28a745' : '#666',
                     fontFamily: 'monospace'
                   }}>
-                    {usdaBalance || '0'} USDA
+                    {usdaBalance || '0'} {ENVIRONMENT === 'test' ? '(TEST) USDA' : 'USDA'}
                   </div>
                 </div>
                 
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', color: '#888', marginBottom: 4 }}>TIM3 Balance</div>
+                  <div style={{ fontSize: '14px', color: '#888', marginBottom: 4 }}>
+                    {ENVIRONMENT === 'test' ? '(TEST) TIM3 Balance' : 'TIM3 Balance'}
+                  </div>
                   <div style={{ 
                     fontSize: '20px', 
                     fontWeight: 'bold', 
                     color: tim3Balance && tim3Balance !== '0' ? '#ffc107' : '#666',
                     fontFamily: 'monospace'
                   }}>
-                    {tim3Balance || '0'} TIM3
+                    {tim3Balance || '0'} {ENVIRONMENT === 'test' ? '(TEST) TIM3' : 'TIM3'}
                   </div>
                 </div>
               </div>
               
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button 
-                  disabled
-                  title="Production USDA cannot be minted - acquire USDA tokens through exchanges"
-                  style={{ 
-                    padding: '8px 16px', 
-                    backgroundColor: '#6c757d',
-                    color: '#aaa',
-                    border: 'none',
-                    borderRadius: 4,
-                    cursor: 'not-allowed',
-                    opacity: 0.6
-                  }}
-                >
-                  🏦 Production USDA (No Mint)
-                </button>
+                {ENVIRONMENT === 'test' ? (
+                  <button 
+                    onClick={mintUSDATokens}
+                    style={{ 
+                      padding: '8px 16px', 
+                      backgroundColor: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 4,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🧪 Get 1000 Test USDA
+                  </button>
+                ) : (
+                  <button 
+                    disabled
+                    title="Production USDA cannot be minted - acquire USDA tokens through exchanges"
+                    style={{ 
+                      padding: '8px 16px', 
+                      backgroundColor: '#6c757d',
+                      color: '#aaa',
+                      border: 'none',
+                      borderRadius: 4,
+                      cursor: 'not-allowed',
+                      opacity: 0.6
+                    }}
+                  >
+                    🏦 Production USDA (No Mint)
+                  </button>
+                )}
                 <button 
                   onClick={fetchUsdaBalance} 
                   style={{ 
@@ -259,7 +292,7 @@ export default function Home() {
                     cursor: 'pointer'
                   }}
                 >
-                  Refresh USDA
+                  Refresh {ENVIRONMENT === 'test' ? '(TEST) USDA' : 'USDA'}
                 </button>
                 <button 
                   onClick={fetchTim3Balance} 
@@ -272,7 +305,7 @@ export default function Home() {
                     cursor: 'pointer'
                   }}
                 >
-                  Refresh TIM3
+                  Refresh {ENVIRONMENT === 'test' ? '(TEST) TIM3' : 'TIM3'}
                 </button>
               </div>
             </div>
@@ -307,14 +340,12 @@ export default function Home() {
               </button>
             </div>
             <div style={{ fontSize: '0.8em', color: '#666', marginBottom: 16 }}>
-              <strong>💡 If TIM3 minting fails:</strong> Click "🔧 Configure Coordinator" to link it with production USDA process
+              <strong>💡 If TIM3 minting fails:</strong> Click "🔧 Configure Coordinator" to link it with {ENVIRONMENT === 'test' ? 'test USDA' : 'production USDA'} process
             </div>
             <a href="/tim3" style={{ textDecoration: 'underline' }}>
               → Go to TIM3 Mint Page
             </a>
           </div>
-
-
         </div>
       )
     }

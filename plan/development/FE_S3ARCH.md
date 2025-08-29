@@ -4,14 +4,18 @@ Goals
 - Build a production-ready frontend for S3ARCH that connects to TIM3 AO processes (lock/swap flows), supports Wander wallet login, and is deployable to the permaweb with ArNS pointing to `ar://s3arch` and public domain `s3ar.ch`.
 - Ensure compatibility with AR.IO gateways, Wayfinder `ar://` resolution, and a future HyperBEAM-based attention analytics module (no-auth required).
 
-## 🎉 CURRENT STATUS: PRODUCTION SWAP UI COMPLETE WITH REAL USDA
+## 🎉 CURRENT STATUS: COMPLETE TEST & PRODUCTION ENVIRONMENT
 - ✅ **Wallet Integration**: Wander wallet connection working via Arweave Wallet Kit
 - ✅ **Swap UI**: Clean card-based interface for USDA → TIM3 swaps with validation
 - ✅ **AO Integration**: Full aoconnect library integration with proper response parsing
 - ✅ **TIM3 Process Connection**: All 5 production TIM3 processes integrated and tested
 - ✅ **Production USDA**: Integrated production USDA process (FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8)
+- ✅ **Test Environment**: Complete test TIM3 processes deployed and configured
+- ✅ **Dual Environment**: Environment toggle system with test/production process separation
+- ✅ **Environment UI**: Clear indicators showing current mode (TEST/PRODUCTION)
 - ✅ **Balance Queries**: Real-time USDA and TIM3 balance display
 - ✅ **Swap Validation**: Min 1 USDA, Max 100,000 USDA per transaction
+- ✅ **Test Processes**: New test TIM3 processes deployed (January 29, 2025)
 - 📝 **Documentation**: Comprehensive implementation log and planning docs updated
 
 ## 🔧 TECHNICAL CHALLENGES & SOLUTIONS
@@ -174,6 +178,64 @@ Open Questions / Decisions
 - Visual system: Tailwind vs minimal CSS to start? (Recommend minimal now.)
 - Do we want a feature flag to disable 3D on low-power devices? (Yes.)
 - Exact TIM3 process IDs and expected payload shapes: confirm from `apps/tim3` and integration tests before wiring forms.
+
+### Test Environment Deployment (COMPLETED)
+**Challenge**: Need dedicated test TIM3 processes separate from production.
+**Solution**: Deployed complete set of test TIM3 processes using AOS CLI.
+**Process IDs** (Deployed January 29, 2025):
+- **Coordinator**: `hjob4ditas_ZLM1MWil7lBfflRSTxsnsXrqZSTfxnBM`
+- **Lock Manager**: `CpNinM9_VCYGlp5BVIwK-eD4mdiv3sH2mxK6SPH0nlY`
+- **Token Manager**: `IDSlr52PKHDMK1fICKDWfxDjlda6JwIcN4MBHR6kfU4`
+- **State Manager**: `jBINaOVF2wLCK9BeZZYUYWBkPZ0EwgvevW4w-uDpDYk`
+
+**Deployment Method**: Created `.load` files for manual AOS deployment:
+```lua
+json = require('json')
+Tags = {
+  ["Process-Type"] = "TIM3-Coordinator-Test",
+  ["Protocol"] = "TIM3-Test",
+  ["Version"] = "2.0.0",
+  ["Environment"] = "development"
+}
+.load /absolute/path/to/process.lua
+```
+
+### Dual Environment Configuration (IMPLEMENTED)
+**Challenge**: Need to safely test TIM3 functionality without risking production token economics.
+**Solution**: Implemented environment toggle system with separate process configurations.
+**Architecture**:
+```typescript
+// Environment configuration - change this to switch between test and production
+export const ENVIRONMENT = 'test' as 'test' | 'production'
+
+const PRODUCTION_PROCESSES = {
+  // Real economic value processes
+  coordinator: { processId: 'dxkd6zkK2t5k0fv_-eG3WRTtZaExetLV0410xI6jfsw' },
+  usda: { processId: 'FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8' }, // Real USDA
+  // ... other production processes
+}
+
+const TEST_PROCESSES = {
+  // Safe testing processes (to be deployed)
+  coordinator: { processId: 'TEST_COORDINATOR_TO_BE_DEPLOYED' },
+  usda: { processId: 'u8DzisIMWnrfGa6nlQvf1J79kYkv8uWjDeXZ489UMXQ' }, // Mock USDA
+  // ... other test processes
+}
+
+export const TIM3_PROCESSES = ENVIRONMENT === 'test' ? TEST_PROCESSES : PRODUCTION_PROCESSES
+```
+
+**UI Features**:
+- Environment indicator badges on both Home and Tim3 pages
+- Conditional USDA minting (test mode only)
+- Environment-aware status messages
+- Clear visual distinction between test and production modes
+
+**Benefits**:
+- Safe development without economic risk
+- Easy switching between environments
+- Maintains production integrity
+- Enables thorough testing
 
 Notes
 - Keep the initial footprint small; r3f is optional and lazy-loaded to avoid impacting core auth + AO flows.

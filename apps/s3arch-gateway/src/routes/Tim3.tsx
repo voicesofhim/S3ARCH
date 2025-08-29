@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { requestMintTIM3 } from '../ao/tim3'
 import { useArweaveWallet } from '../wallet/useArweaveWallet'
+import { ENVIRONMENT } from '../ao/processes'
 
 export default function Tim3() {
   const { address, isConnected, connect } = useArweaveWallet()
@@ -37,6 +38,24 @@ export default function Tim3() {
         }}
       >
         <h2 style={{ textAlign: 'center', color: '#c77dff', marginTop: 0 }}>Quantum TIM3</h2>
+        
+        {/* Environment Indicator */}
+        <div style={{ 
+          textAlign: 'center',
+          marginBottom: 16 
+        }}>
+          <div style={{ 
+            display: 'inline-block',
+            padding: '6px 12px',
+            backgroundColor: ENVIRONMENT === 'test' ? '#ffc107' : '#28a745',
+            color: '#000',
+            borderRadius: 4,
+            fontWeight: 'bold',
+            fontSize: '12px'
+          }}>
+            {ENVIRONMENT === 'test' ? '🧪 TEST MODE' : '🏛️ PRODUCTION MODE'}
+          </div>
+        </div>
 
         {/* Send (USDA) */}
         <div
@@ -77,10 +96,10 @@ export default function Tim3() {
                 textAlign: 'center'
               }}
             >
-              USDA
+              {ENVIRONMENT === 'test' ? '(TEST) USDA' : 'USDA'}
             </div>
           </div>
-          <div style={{ color: '#6b7280', fontSize: 12, marginTop: 6 }}>0.00 | USDA</div>
+          <div style={{ color: '#6b7280', fontSize: 12, marginTop: 6 }}>0.00 | {ENVIRONMENT === 'test' ? '(TEST) USDA' : 'USDA'}</div>
         </div>
 
         <hr style={{ borderColor: '#222', margin: '18px 0' }} />
@@ -116,10 +135,10 @@ export default function Tim3() {
                 textAlign: 'center'
               }}
             >
-              TIM3
+              {ENVIRONMENT === 'test' ? '(TEST) TIM3' : 'TIM3'}
             </div>
           </div>
-          <div style={{ color: '#6b7280', fontSize: 12, marginTop: 6 }}>0.00 | TIM3</div>
+          <div style={{ color: '#6b7280', fontSize: 12, marginTop: 6 }}>0.00 | {ENVIRONMENT === 'test' ? '(TEST) TIM3' : 'TIM3'}</div>
         </div>
 
         {/* Action Button */}
@@ -156,7 +175,7 @@ export default function Tim3() {
               cursor: !usdaAmount || Number(usdaAmount) <= 0 ? 'not-allowed' : 'pointer'
             }}
           >
-            Swap to TIM3
+            Swap to {ENVIRONMENT === 'test' ? '(TEST) TIM3' : 'TIM3'}
           </button>
         )}
 

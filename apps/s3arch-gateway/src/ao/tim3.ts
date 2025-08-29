@@ -1,4 +1,4 @@
-import { TIM3_PROCESSES } from './processes'
+import { TIM3_PROCESSES, ENVIRONMENT } from './processes'
 import { sendAOMessage } from './client'
 
 // Mint flow is initiated via the Coordinator by sending Action MintTIM3
@@ -12,7 +12,7 @@ export async function requestMintTIM3(tim3Amount: string) {
   })
 }
 
-// Query USDA balance (production USDA)
+// Query USDA balance (adapts to environment)
 export async function getUSDABalance(target: string) {
   return sendAOMessage({
     processId: TIM3_PROCESSES.usda.processId,
@@ -21,11 +21,18 @@ export async function getUSDABalance(target: string) {
   })
 }
 
-// DEPRECATED: Mint test USDA tokens (kept for reference, inactive)
-// Production USDA does not have a mint function
+// Mint test USDA tokens (only available in test environment)
 export async function mintTestUSDA(amount: string = '1000') {
-  console.warn('mintTestUSDA is deprecated - production USDA does not support minting')
-  return Promise.reject(new Error('Production USDA does not support minting'))
+  if (ENVIRONMENT !== 'test') {
+    console.warn('mintTestUSDA is only available in test environment - production USDA does not support minting')
+    return Promise.reject(new Error('Production USDA does not support minting'))
+  }
+  
+  return sendAOMessage({
+    processId: TIM3_PROCESSES.usda.processId, // In test mode, this will be the mock USDA
+    action: 'Mint',
+    tags: { Amount: amount },
+  })
 }
 
 // Check coordinator status/logs
@@ -37,7 +44,7 @@ export async function getCoordinatorStatus() {
   })
 }
 
-// Configure coordinator with production USDA process
+// Configure coordinator with appropriate USDA process (adapts to environment)
 export async function configureCoordinator() {
   return sendAOMessage({
     processId: TIM3_PROCESSES.coordinator.processId,

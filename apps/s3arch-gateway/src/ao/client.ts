@@ -44,7 +44,7 @@ export async function sendAOMessage(opts: MessageOptions) {
 }
 
 // Helper function to query balance with timeout and response handling
-export async function queryBalance(processId: string, scheduler: string, target: string): Promise<string> {
+export async function queryBalance(processId: string, target: string): Promise<string> {
   try {
     console.log('Starting balance query...')
     console.log('Process ID:', processId)

@@ -16,6 +16,7 @@
     "@arweave-wallet-kit/wander-strategy": "^0.1.2",
     "@permaweb/aoconnect": "^0.0.90",
     "@wanderapp/connect": "^0.1.11",
+    "@xyflow/react": "^12.8.4",
     "arweave": "^1.15.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

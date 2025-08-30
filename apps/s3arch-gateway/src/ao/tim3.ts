@@ -5,11 +5,21 @@ import { sendAOMessage } from './client'
 // with TIM3 amount in Tags (Amount or Quantity). The coordinator then
 // orchestrates LockCollateral and Mint.
 export async function requestMintTIM3(tim3Amount: string) {
-  return sendAOMessage({
+  console.log('🔄 Starting TIM3 mint request...')
+  console.log('📊 Mint details:', {
+    tim3Amount,
+    coordinatorProcess: TIM3_PROCESSES.coordinator.processId,
+    action: 'MintTIM3'
+  })
+  
+  const result = await sendAOMessage({
     processId: TIM3_PROCESSES.coordinator.processId,
     action: 'MintTIM3',
     tags: { Amount: tim3Amount },
   })
+  
+  console.log('✅ TIM3 mint request sent, result:', result)
+  return result
 }
 
 // Query USDA balance (adapts to environment)
@@ -44,12 +54,17 @@ export async function getCoordinatorStatus() {
   })
 }
 
-// Configure coordinator with appropriate USDA process (adapts to environment)
+// Configure coordinator with ALL required processes (adapts to environment)
 export async function configureCoordinator() {
   return sendAOMessage({
     processId: TIM3_PROCESSES.coordinator.processId,
-    action: 'SetMockUsdaProcess',
-    tags: { ProcessId: TIM3_PROCESSES.usda.processId },
+    action: 'SetProcessConfig',
+    tags: { 
+      MockUsdaProcess: TIM3_PROCESSES.usda.processId,
+      LockManagerProcess: TIM3_PROCESSES.lockManager.processId,
+      TokenManagerProcess: TIM3_PROCESSES.tokenManager.processId,
+      StateManagerProcess: TIM3_PROCESSES.stateManager.processId,
+    },
   })
 }
 

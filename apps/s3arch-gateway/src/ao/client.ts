@@ -36,6 +36,35 @@ export async function sendAOMessage(opts: MessageOptions) {
     })
     
     console.log('AO message sent successfully, ID:', messageId)
+    
+    // For critical actions, try to get response after a short delay
+    if (action === 'MintTIM3' || action === 'SetProcessConfig') {
+      setTimeout(async () => {
+        try {
+          console.log(`🔍 Checking for ${action} response...`)
+          const response = await result({
+            message: messageId,
+            process: processId,
+          })
+          
+          if (response.Messages && response.Messages.length > 0) {
+            console.log(`📥 ${action} response messages:`, response.Messages)
+            
+            // Check for error responses
+            const errorMessage = response.Messages.find(msg => 
+              msg.Tags?.some(tag => tag.name === 'Action' && tag.value.includes('Error'))
+            )
+            
+            if (errorMessage) {
+              console.error(`❌ ${action} ERROR DETECTED:`, errorMessage.Data)
+            }
+          }
+        } catch (e) {
+          console.log(`⚠️ Could not fetch ${action} response:`, e)
+        }
+      }, 3000) // Check after 3 seconds
+    }
+    
     return messageId
   } catch (error) {
     console.error('AO message failed:', error)
@@ -49,6 +78,9 @@ export async function queryBalance(processId: string, scheduler: string, target:
     console.log('Starting balance query...')
     console.log('Process ID:', processId)
     console.log('Target:', target)
+    
+    // Import processes to determine token type
+    const { TIM3_PROCESSES } = await import('./processes')
     
     // Step 1: Send the balance query message
     console.log('Sending balance query message...')
@@ -87,15 +119,19 @@ export async function queryBalance(processId: string, scheduler: string, target:
             let balanceValue = null
             let ticker = 'tokens'
             
+            // Determine correct ticker based on which process we're querying
+            const isUsdaProcess = processId === TIM3_PROCESSES.usda.processId
+            const defaultTicker = isUsdaProcess ? 'USDA' : 'TIM3'
+            
             if (data.balance !== undefined) {
               balanceValue = data.balance
-              ticker = data.ticker || 'TIM3'
+              ticker = data.ticker || defaultTicker
             } else if (data.Balance !== undefined) {
               balanceValue = data.Balance
-              ticker = data.ticker || 'TIM3'
+              ticker = data.ticker || defaultTicker
             } else if (data.available !== undefined) {
               balanceValue = data.available
-              ticker = 'USDA'
+              ticker = data.ticker || defaultTicker
             }
             
             if (balanceValue !== null) {
@@ -112,7 +148,9 @@ export async function queryBalance(processId: string, scheduler: string, target:
         // Check tags for balance info
         const balanceTag = responseMessage.Tags?.find((tag: any) => tag.name === 'Balance')
         if (balanceTag) {
-          return `${balanceTag.value} TIM3`
+          const isUsdaProcess = processId === TIM3_PROCESSES.usda.processId
+          const defaultTicker = isUsdaProcess ? 'USDA' : 'TIM3'
+          return `${balanceTag.value} ${defaultTicker}`
         }
         
         return 'Balance query completed, but no balance found in response'

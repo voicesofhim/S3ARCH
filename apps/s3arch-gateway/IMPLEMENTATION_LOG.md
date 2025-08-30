@@ -133,6 +133,13 @@ apps/s3arch-gateway/
 
 ---
 
+## 📘 Coordinator v2 Deposit Flow Added to Docs (2025-08-30)
+
+- Frontend remains non-authoritative; all coordination occurs in AO.
+- Documented USDA `Transfer → Credit-Notice → Mint` sequence and confirmed production PIDs.
+- ENV note: set `ENVIRONMENT` to `'production'` to use live processes.
+
+
 ## 📋 Implementation Phases
 
 ### ✅ Phase 1: Foundation (COMPLETED)

@@ -1,6 +1,32 @@
-# React + TypeScript + Vite
+# S3ARCH Gateway – USDA → TIM3 Deposit Flow (Coordinator v2)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This frontend is a thin client: wallets connect and send AO messages; all swap logic runs in AO (deterministic). For v1, deposits go to the Coordinator (acts as custody); TIM3 is minted 1:1 on USDA Credit-Notice.
+
+## Deposit Flow (Astro-aligned, AO-only)
+
+1. User sends USDA transfer:
+   - `Action: Transfer`
+   - Tags: `Recipient=<CoordinatorPID>`, `Quantity=<amount>`
+2. USDA emits to Coordinator:
+   - `Action: Credit-Notice`
+   - Tags: includes `Sender`, `Quantity`
+3. Coordinator mints TIM3:
+   - `Action: Mint`
+   - Tags: `Recipient=<Sender>`, `Amount=<Quantity>`
+
+UI responsibilities:
+- Connect Wander wallet
+- Send `Transfer` to USDA PID with `Recipient` set to Coordinator PID
+- Display balances via `Balance` queries
+
+Production PIDs (confirmed in repo):
+- Coordinator: `dxkd6zkK2t5k0fv_-eG3WRTtZaExetLV0410xI6jfsw`
+- Token Manager: `BUhWwGfuD1GUHVIIWF_Jhm1mfcyAYHOJS6W90ur2Bb0`
+- State Manager: `K2FjwiTmncglx0pISNMft5-SngxW-HUjs9sctzmXtU4`
+- USDA (real): `FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8`
+
+## ENV selection
+Set `ENVIRONMENT` in `src/ao/processes.ts` to `'production'` for live PIDs.
 
 Currently, two official plugins are available:
 

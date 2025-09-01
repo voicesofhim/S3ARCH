@@ -26,22 +26,22 @@ const PRODUCTION_PROCESSES = {
 } as const
 
 // Test processes (safe for development, no real economic value) 
-// 🧪 DEPLOYED: January 29, 2025
+// 🧪 DEPLOYED: August 30, 2025 - State Manager Integration Fixed
 const TEST_PROCESSES = {
   coordinator: {
-    processId: 'hjob4ditas_ZLM1MWil7lBfflRSTxsnsXrqZSTfxnBM', // ✅ TIM3 Test Coordinator
+    processId: 'uNhmrUij4u6ZZr_39BDI5E2G2afkit8oC7q4vAtRskM', // ✅ TIM3 Orchestrator v2 (State Manager Fixed)
     scheduler: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
   },
   lockManager: {
-    processId: 'CpNinM9_VCYGlp5BVIwK-eD4mdiv3sH2mxK6SPH0nlY', // ✅ TIM3 Test Lock Manager  
+    processId: 'MWxRVsCDoSzQ0MhG4_BWkYs0fhcULB-OO3f2t1RlBAs', // ✅ TIM3 Test Lock Manager (matches orchestrator config)
     scheduler: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
   },
   tokenManager: {
-    processId: 'IDSlr52PKHDMK1fICKDWfxDjlda6JwIcN4MBHR6kfU4', // ✅ TIM3 Test Token Manager
+    processId: 'DoXrn6DGZZuDMkyun4rmXh7k8BY8pVxFpr3MnBWYJFw', // ✅ TIM3 Test Token Manager (matches orchestrator config)
     scheduler: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
   },
   stateManager: {
-    processId: 'jBINaOVF2wLCK9BeZZYUYWBkPZ0EwgvevW4w-uDpDYk', // ✅ TIM3 Test State Manager
+    processId: 'K2FjwiTmncglx0pISNMft5-SngxW-HUjs9sctzmXtU4', // ✅ TIM3 Test State Manager (matches orchestrator config)
     scheduler: '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
   },
   usda: {

@@ -71,10 +71,17 @@ Here's everything you need to know to get from 0 to 1 TIM3:
 - **Token Manager receiving authorization requests**
 - **Balance queries returning accurate 0 TIM3 baseline**
 
-### Investigation Required 🔍
-**USDA Lock Flow Analysis**: All configurations complete but locks remain pending
+### ✅ RESOLVED: Root Cause Identified and Fixed
+**USDA Lock Flow Bug**: Critical one-line bug in Mock USDA process
 
-Despite `mockUsdaConfigured: true` and all process communication working, mints stay at "pending-collateral-lock". Need first principles investigation of actual USDA interaction mechanism.
+**The Issue**: Mock USDA used `msg.From` (Lock Manager address) instead of `msg.Tags.User` (actual user wallet) when checking balances for collateral locking.
+
+**The Fix**: Changed line 217 in `mock-usda/src/process.lua`:
+```lua
+local user = msg.Tags.User or msg.From  -- Now correctly uses User tag
+```
+
+**Impact**: This single line prevented ALL mints from succeeding, despite perfect configuration and process communication.
 
 ---
 
@@ -262,7 +269,14 @@ Send({Target="PID", Action="Eval", Data="Config.field='value'; print('Set:', Con
 
 ## 💡 Key Insights from This Integration
 
+### Critical AO Debugging Lesson
+**🚨 MOST IMPORTANT**: Always verify variable sources FIRST before complex debugging
+- The TIM3 blocker was `msg.From` vs `msg.Tags.User` - a single line that cost days
+- Variable source mismatches cause silent failures that appear as "system works but operations fail"
+- See `AO_DEBUGGING_METHODOLOGY.md` for systematic approach to prevent this
+
 ### AO Process Architecture Lessons
+- **Variable Source Verification**: Check `msg.From` vs `msg.Tags.*` usage in every handler
 - **Authorization Chains**: Every process must explicitly trust its callers
 - **Configuration Patterns**: Direct assignment often works when Configure handlers fail
 - **Message Tracing**: Inbox inspection is critical for debugging flows

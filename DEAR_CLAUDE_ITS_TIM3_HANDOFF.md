@@ -240,6 +240,34 @@ When that first TIM3 balance changes from 0 to 1, you'll have witnessed the birt
 
 ---
 
+## 📚 Repository & Documentation References
+
+### GitHub Repository
+- **Repository**: `https://github.com/voicesofhim/S3ARCH`
+- **Latest Commit**: `2487b80` - "TIM3 Integration Complete: 95% Production System Ready"
+- **Branch**: `main`
+- **Key Files**: All TIM3 process source code and configuration
+
+### Planning Documentation
+- **`TIM3_INTEGRATION_COMPLETE_REPORT.md`**: Complete technical progress report
+- **`NEXT_SESSION_PROMPT.md`**: Updated session handoff with current status
+- **`plan/`**: Architecture and development planning documents
+- **`apps/tim3/`**: Complete TIM3 implementation source code
+
+### Process Source Code Locations
+- **Coordinator**: `apps/tim3/ao/coordinator/src/process.lua`
+- **Token Manager**: `apps/tim3/ao/token-manager/src/process.lua`
+- **Lock Manager**: `apps/tim3/ao/lock-manager/src/process.lua`
+- **State Manager**: `apps/tim3/ao/state-manager/src/process.lua`
+- **Build Scripts**: `apps/tim3/scripts/build-process.cjs`
+
+### Frontend Integration
+- **S3ARCH Gateway**: `apps/s3arch-gateway/`
+- **Process Configuration**: `apps/s3arch-gateway/src/ao/processes.ts`
+- **Process Flow Diagram**: `apps/s3arch-gateway/src/components/ProcessFlowDiagram.tsx`
+
+---
+
 ## 📚 Quick Reference
 
 ### Essential PIDs

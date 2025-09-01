@@ -181,4 +181,30 @@ The system architecture is sound, the processes communicate correctly, and the u
 
 ---
 
+## 📚 Repository & Documentation
+
+### GitHub Repository
+- **Repository**: `https://github.com/voicesofhim/S3ARCH`
+- **Latest Commit**: `2487b80` - "TIM3 Integration Complete: 95% Production System Ready"
+- **Branch**: `main`
+
+### Key Documentation Files
+- **`DEAR_CLAUDE_ITS_TIM3_HANDOFF.md`**: Complete handoff guide for next session
+- **`NEXT_SESSION_PROMPT.md`**: Updated planning documentation with current status
+- **`plan/`**: Architecture and development planning documents
+- **`apps/tim3/`**: Complete TIM3 implementation source code
+
+### Process Source Code
+- **Coordinator**: `apps/tim3/ao/coordinator/src/process.lua`
+- **Token Manager**: `apps/tim3/ao/token-manager/src/process.lua`
+- **Lock Manager**: `apps/tim3/ao/lock-manager/src/process.lua`
+- **State Manager**: `apps/tim3/ao/state-manager/src/process.lua`
+
+### Frontend Integration
+- **S3ARCH Gateway**: `apps/s3arch-gateway/`
+- **Process Configuration**: `apps/s3arch-gateway/src/ao/processes.ts`
+- **Process Flow Diagram**: `apps/s3arch-gateway/src/components/ProcessFlowDiagram.tsx`
+
+---
+
 *"From 0 to 1 in TIM3 - We're almost there!" 🚀*

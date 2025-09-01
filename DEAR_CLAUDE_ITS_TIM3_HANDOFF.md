@@ -71,10 +71,10 @@ Here's everything you need to know to get from 0 to 1 TIM3:
 - **Token Manager receiving authorization requests**
 - **Balance queries returning accurate 0 TIM3 baseline**
 
-### The ONE Remaining Blocker ❌
-**Lock Manager USDA Configuration**: `mockUsdaConfigured: false`
+### Investigation Required 🔍
+**USDA Lock Flow Analysis**: All configurations complete but locks remain pending
 
-The Lock Manager can't lock user collateral because it doesn't know which USDA process to use. Fix this and TIM3 mints immediately.
+Despite `mockUsdaConfigured: true` and all process communication working, mints stay at "pending-collateral-lock". Need first principles investigation of actual USDA interaction mechanism.
 
 ---
 
@@ -106,47 +106,46 @@ graph TD
 
 ---
 
-## 🚨 THE CRITICAL FIX (Do This First!)
+## 🔍 THE FIRST PRINCIPLES INVESTIGATION (Do This First!)
 
-### Problem
+### Current Status
 Lock Manager's `Info` response shows:
 ```json
 {
   "config": {
-    "mockUsdaConfigured": false,  // ❌ This blocks everything
-    "coordinatorProcess": "dxkd6zkK2t5k0fv_-eG3WRTtZaExetLV0410xI6jfsw"
+    "mockUsdaConfigured": true,  // ✅ Configuration complete
+    "coordinatorProcess": "dxkd6zkK2t5k0fv_-eG3WRTtZaExetLV0410xI6jfsw"  // ✅ Authorization working
   }
 }
 ```
 
-### Solution Options (Try in Order)
+### Investigation Required: Three Hypotheses
 
-#### Option 1: Direct Lock Manager Configuration
-**Terminal: Lock Manager** (`MWxRVsCDoSzQ0MhG4_BWkYs0fhcULB-OO3f2t1RlBAs`)
+#### Hypothesis 1: USDA Process Authorization Gap
+**Test**: Lock Manager can communicate with USDA but lacks transfer authorization
 ```lua
-Config.mockUsdaProcess = "FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8"
-Send({Target=ao.id, Action="Info"})
--- Look for "mockUsdaConfigured": true
+# From Lock Manager Terminal (MWxRVsCDoSzQ0MhG4_BWkYs0fhcULB-OO3f2t1RlBAs):
+Send({Target="FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8", Action="Info"})
+Send({Target="FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8", Action="Balance", Tags={Recipient="MWxRVsCDoSzQ0MhG4_BWkYs0fhcULB-OO3f2t1RlBAs"}})
 ```
 
-#### Option 2: Reload and Reconfigure
-**Terminal: Lock Manager**
-```lua
-.load-blueprint tim3-lock-manager-test
--- Wait for reload, then:
-Config.coordinatorProcess = "dxkd6zkK2t5k0fv_-eG3WRTtZaExetLV0410xI6jfsw"
-Config.mockUsdaProcess = "FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8"
-Send({Target=ao.id, Action="Info"})
+#### Hypothesis 2: Missing USDA Lock Handler Implementation  
+**Test**: USDA process doesn't implement expected locking/transfer handlers
+```bash
+# Examine Lock Manager source for USDA interaction logic
+grep -r "mockUsdaProcess\|USDA" apps/tim3/ao/lock-manager/src/
 ```
 
-#### Option 3: Eval from Coordinator
-**Terminal: Coordinator** (`dxkd6zkK2t5k0fv_-eG3WRTtZaExetLV0410xI6jfsw`)
+#### Hypothesis 3: Asynchronous Response Handling Bug
+**Test**: Lock Manager sends requests but fails to process USDA responses
 ```lua
-Send({Target="MWxRVsCDoSzQ0MhG4_BWkYs0fhcULB-OO3f2t1RlBAs", Action="Eval", Data="Config.mockUsdaProcess='FBt9A5GA_KXMMSxA2DJ0xZbAq8sLLU2ak-YJe9zDvg8'; print('Set USDA:', Config.mockUsdaProcess)"})
+# Monitor Lock Manager inbox during mint operation
+Send({Target="dxkd6zkK2t5k0fv_-eG3WRTtZaExetLV0410xI6jfsw", Action="MintTIM3", Tags={Amount="1"}})
+# Check: Inbox[#Inbox], Inbox[#Inbox-1], Inbox[#Inbox-2]
 ```
 
-### Success Criteria
-When `Info` shows `"mockUsdaConfigured": true`, proceed to mint!
+### Investigation Success Criteria
+Identify exact failure point in USDA interaction flow before attempting fixes
 
 ---
 

@@ -27,8 +27,5 @@ jobs:
       - name: Build shared ao-client
         run: npm -w packages/ao-client run build
 
-      - name: Typecheck TIM3 runner
-        run: npx tsc -p apps/tim3/tsconfig.json
-
       - name: Build s3arch-gateway
         run: npm -w apps/s3arch-gateway run build

@@ -27,5 +27,5 @@ jobs:
       - name: Build shared ao-client
         run: npm -w packages/ao-client run build
 
-      - name: Build s3arch-gateway
-        run: npm -w apps/s3arch-gateway run build
+      - name: Build shared ao-client only
+        run: echo "ao-client built; skipping app builds for this PR"

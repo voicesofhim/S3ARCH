@@ -1,4 +1,11 @@
 # S3ARCH Monorepo Implementation Log
+2025-09-10 – AO Node runner, shared ao-client, CI, scenarios scaffold:
+ - Added Node/TS aoconnect runner for TIM3 under apps/tim3 (deploy/send/result/tail)
+ - Created packages/ao-client with core/node helpers for aoconnect
+ - Minimal CI (build/typecheck) and PR template
+ - Added JSON-driven scenario scaffold (Info/Stats/Balance)
+ - Wrote AO_DEVELOPMENT.md and updated README references
+  - Added LEARNING_GUIDE.md and educational comments in runner/ao-client
 
 **Complete Development History of the S3ARCH Ecosystem**
 

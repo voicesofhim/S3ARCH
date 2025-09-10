@@ -54,6 +54,7 @@ npm run ao:deploy
 2. **Testing**: Create comprehensive tests in `ao/*/test/`
 3. **Building**: Use Docker-based Lua squishing for deployment builds
 4. **Frontend**: React app with Wander wallet integration
+5. **AO via Node**: See `apps/tim3/AO_DEVELOPMENT.md` for a TypeScript aoconnect runner that deploys, messages, and tails processes without AOS copy/paste.
 
 ## 🔐 Security Features
 

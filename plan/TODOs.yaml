@@ -1,0 +1,44 @@
+version: 1
+areas:
+  ao-foundation:
+    - id: ao-client
+      title: Shared ao-client wrapper
+      status: in-progress
+      notes:
+        - Minimal core + node utilities created in packages/ao-client
+        - Next: add retries, structured logs, redaction
+    - id: runner-integration
+      title: Integrate runner with ao-client
+      status: todo
+      notes:
+        - Refactor apps/tim3/src/ao/runner.ts to use ao-client helpers
+  tests:
+    - id: scenarios-baseline
+      title: JSON-driven baseline scenarios
+      status: done
+      notes:
+        - Added Info/Stats/Balance scenario
+        - Next: add mint/burn flows
+    - id: learning-guide
+      title: Beginner learning guide
+      status: done
+      notes:
+        - Added apps/tim3/LEARNING_GUIDE.md
+        - Expanded code comments in runner and ao-client
+  ci-cd:
+    - id: ci-minimal
+      title: Minimal CI build & typecheck
+      status: done
+      notes:
+        - No secrets; no AO calls
+    - id: ci-dryrun
+      title: Dry-run smoke tests (no wallet)
+      status: planned
+      notes:
+        - Add ao:dryrun-smoke when ready; separate workflow
+  ui:
+    - id: gateway-hooks
+      title: Gateway deploy + Info button
+      status: planned
+      notes:
+        - Wire simple controls to call aoconnect

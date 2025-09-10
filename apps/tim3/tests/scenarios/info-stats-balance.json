@@ -1,0 +1,11 @@
+{
+  "name": "Info/Stats/Balance sanity",
+  "config": "apps/tim3/test-processes-complete.yaml",
+  "processName": "tim3-coordinator-test",
+  "steps": [
+    { "action": "Info", "expect": { "actionIncludes": "Info-Response" } },
+    { "action": "Stats", "expect": { "actionIncludes": "Stats-Response" } },
+    { "action": "Balance", "tags": "Target=test_user", "expect": { "actionIncludes": "Balance-Response" } }
+  ]
+}
+

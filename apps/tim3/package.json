@@ -1,0 +1,26 @@
+{
+  "name": "@s3arch/tim3",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TIM3 AO development toolkit (Node/TS + aoconnect)",
+  "scripts": {
+    "dev": "echo 'No web dev server for TIM3. Use npm run ao:* scripts.'",
+    "ao:deploy": "npx -y tsx src/ao/runner.ts deploy",
+    "ao:send": "npx -y tsx src/ao/runner.ts send",
+    "ao:result": "npx -y tsx src/ao/runner.ts result",
+    "ao:tail": "npx -y tsx src/ao/runner.ts tail",
+    "ao:test": "npx -y tsx src/ao/runner.ts test",
+    "ao:scenarios": "npx -y tsx src/ao/scenario-runner.ts"
+  },
+  "dependencies": {
+    "@permaweb/aoconnect": "^0.0.90",
+    "yaml": "^2.4.5",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "@types/node": "^22.5.4",
+    "@types/yargs": "^17.0.33"
+  }
+}

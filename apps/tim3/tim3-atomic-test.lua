@@ -130,5 +130,62 @@ Handlers.add("Stats", Handlers.utils.hasMatchingTag("Action", "Stats"), function
     })
 end)
 
-print("TIM3 ATOMIC TEST LOADED (USDA: " .. USDA_PROCESS_ID .. ")")
+-- Burn via Transfer (Recipient=burn): destroy TIM3 and return USDA 1:1
+Handlers.add("Transfer", Handlers.utils.hasMatchingTag("Action", "Transfer"), function(msg)
+    local recipient = msg.Tags.Recipient or msg.Tags.Target
+    local amount = tonumber(msg.Tags.Quantity or msg.Tags.Amount or "0")
+    local sender = msg.From
 
+    if amount <= 0 then
+        ao.send({ Target = sender, Action = "Transfer-Error", Data = json.encode({ error = "Invalid amount", amount = tostring(amount) }) })
+        return
+    end
+
+    local senderBalance = Balances[sender] or 0
+    if senderBalance < amount and (recipient == "burn" or recipient == ao.id or recipient == "BURN") then
+        ao.send({ Target = sender, Action = "Burn-Error", Data = json.encode({ error = "Insufficient TIM3 balance" }) })
+        return
+    end
+
+    if recipient == "burn" or recipient == ao.id or recipient == "BURN" then
+        if burn(sender, amount) then
+            -- Return USDA to user
+            ao.send({
+                Target = USDA_PROCESS_ID,
+                Action = "Transfer",
+                Tags = { Recipient = sender, Quantity = tostring(amount) }
+            })
+
+            UsdaCollateral = UsdaCollateral - amount
+            SwapStats.totalBurns = SwapStats.totalBurns + 1
+
+            ao.send({
+                Target = sender,
+                Action = "Burn-Success",
+                Data = json.encode({ tim3Burned = tostring(amount), usdaReleased = tostring(amount), newBalance = tostring(Balances[sender] or 0), timestamp = os.time() })
+            })
+        else
+            ao.send({ Target = sender, Action = "Burn-Error", Data = json.encode({ error = "Insufficient TIM3 balance" }) })
+        end
+        return
+    end
+
+    -- Regular transfer between users
+    if senderBalance < amount then
+        ao.send({ Target = sender, Action = "Transfer-Error", Data = json.encode({ error = "Insufficient balance", balance = tostring(senderBalance), required = tostring(amount) }) })
+        return
+    end
+
+    Balances[sender] = senderBalance - amount
+    Balances[recipient] = (Balances[recipient] or 0) + amount
+
+    if not UniqueUsers[recipient] then
+        UniqueUsers[recipient] = true
+        SwapStats.uniqueUsers = SwapStats.uniqueUsers + 1
+    end
+
+    ao.send({ Target = sender, Action = "Transfer-Success", Data = json.encode({ recipient = recipient, amount = tostring(amount), timestamp = os.time() }) })
+    ao.send({ Target = recipient, Action = "Credit-Notice", Data = json.encode({ sender = sender, amount = tostring(amount), timestamp = os.time() }) })
+end)
+
+print("TIM3 ATOMIC TEST LOADED (USDA: " .. USDA_PROCESS_ID .. ")")

@@ -50,7 +50,7 @@ async function main() {
 
   // 3) Mint 0.02 USDA to self (so we can transfer 0.01)
   // Mock-USDA expects numeric Quantity; using 0.02 with 6 decimals precision
-  const mintId = await sendAction({ processId: usdaPid, action: 'Mint', tags: { Amount: '0.02' }, signer })
+  const mintId = await sendAction({ processId: usdaPid, action: 'Mint', tags: 'Amount=0.02', signer })
   console.log('Mint msg:', mintId)
   await waitResult(usdaPid, mintId, 20000).catch(() => {})
 
@@ -58,7 +58,7 @@ async function main() {
   const xferId = await sendAction({
     processId: usdaPid,
     action: 'Transfer',
-    tags: { Recipient: tim3Pid, Quantity: '0.01' },
+    tags: `Recipient=${tim3Pid},Quantity=0.01`,
     signer
   })
   console.log('Transfer msg:', xferId)

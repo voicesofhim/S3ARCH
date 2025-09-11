@@ -4,6 +4,9 @@ Overview
 - Use `@permaweb/aoconnect` from Node to deploy (spawn) AO processes, send messages, await results, and poll outputs.
 - Scripts live under `apps/tim3/src/ao/runner.ts` and are exposed via npm scripts.
 
+Related Docs
+- Architecture timeline and current foundation: `apps/tim3/TIM3_ARCHITECTURE_TIMELINE.md`
+
 Requirements
 - Node 18+ (repo uses engines >=18)
 - Arweave JWK wallet file for signing messages (testnet recommended)
@@ -27,8 +30,10 @@ Quick start
   - `npm --workspace apps/tim3 run ao:tail -- --process <PID>`
 
 Reproducible scenarios (JSON)
-- Run baseline Info/Stats/Balance (auto-spawns if process_id missing in YAML):
-  - `npm --workspace apps/tim3 run ao:scenarios -- --file apps/tim3/tests/scenarios/info-stats-balance.json`
+- From the apps/tim3 directory context, use relative paths:
+  - `npm --workspace apps/tim3 run ao:scenarios -- --file tests/scenarios/info-stats-balance.json`
+  - `npm --workspace apps/tim3 run ao:scenarios -- --file tests/scenarios/mint-burn-smoke.json`
+  - Artifacts saved under `apps/tim3/.runs/<timestamp>/`
 
 Notes
 - The runner mirrors how AOS is used: first spawn a process with the correct `module` and `scheduler`, then Eval your Lua to load the code.

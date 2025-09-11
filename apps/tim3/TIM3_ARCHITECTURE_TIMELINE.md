@@ -40,8 +40,9 @@ Ticker and Decimals
   - Action: keep current runtime labels during validation; finalize on “TIM3” for production token identity.
 - Decimals
   - Atomic contract sets `Denomination = 6` in `tim3-production.lua`.
-  - Prior notes suggest 12 decimals (1e12 = 1 TIM3). This is a mismatch.
-  - Action: choose 6 or 12 and align contract, gateway math, docs, and scenarios before production UX hardening.
+  - Mock-USDA uses 6 decimals as well (`Denomination or 6`) to mirror real USDA behavior.
+  - Prior notes suggest 12 decimals (1e12 = 1 TIM3), which would require consistent scaling and increases complexity.
+  - Recommendation: adopt 6 decimals for TIM3 to match USDA and simplify 1:1 accounting across processes and the gateway.
 
 Testing Notes and Known Pitfalls
 - json preload variance
@@ -68,4 +69,3 @@ Pointers (evidence & entry points)
 - aoconnect CLI: `apps/tim3/src/ao/runner.ts`
 - Scenarios: `apps/tim3/tests/scenarios/*.json`
 - Process configs: `apps/tim3/test-processes-complete.yaml`, `apps/tim3/processes.yaml`
-

@@ -7,6 +7,11 @@ Overview
 Related Docs
 - Architecture timeline and current foundation: `apps/tim3/TIM3_ARCHITECTURE_TIMELINE.md`
 
+Scenarios
+- Preferred (Atomic): `apps/tim3/tests/scenarios/atomic-info-stats-balance.json` using `apps/tim3/test-processes-atomic.yaml`.
+- Legacy/Advanced (Coordinator): `apps/tim3/tests/scenarios/*.json` using `apps/tim3/test-processes-complete.yaml`.
+- Artifacts: `apps/tim3/.runs/<timestamp>/`. Some nodes lack `json`; prefer Atomic scenarios for reliability.
+
 Requirements
 - Node 18+ (repo uses engines >=18)
 - Arweave JWK wallet file for signing messages (testnet recommended)

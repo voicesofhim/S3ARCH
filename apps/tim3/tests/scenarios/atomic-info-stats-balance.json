@@ -1,0 +1,11 @@
+{
+  "name": "Atomic Info/Stats/Balance sanity",
+  "config": "test-processes-atomic.yaml",
+  "processName": "tim3-atomic-test",
+  "steps": [
+    { "action": "Info", "expect": { "actionIncludes": "Info-Response" } },
+    { "action": "Stats", "expect": { "actionIncludes": "Stats-Response" } },
+    { "action": "Balance", "tags": "Target=test_user", "expect": { "actionIncludes": "Balance-Response" } }
+  ]
+}
+

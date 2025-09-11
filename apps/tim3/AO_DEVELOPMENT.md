@@ -12,6 +12,10 @@ Scenarios
 - Legacy/Advanced (Coordinator): `apps/tim3/tests/scenarios/*.json` using `apps/tim3/test-processes-complete.yaml`.
 - Artifacts: `apps/tim3/.runs/<timestamp>/`. Some nodes lack `json`; prefer Atomic scenarios for reliability.
 
+Atomic Mint Demo (0.01 USDA)
+- Run: `npm --workspace apps/tim3 run ao:demo:atomic`
+- What it does: Spawns the atomic test contract (wired to Mock USDA), mints 0.02 USDA to your wallet, transfers 0.01 to TIM3, then fetches Stats. Use this to validate 1:1 mint without AOS.
+
 Requirements
 - Node 18+ (repo uses engines >=18)
 - Arweave JWK wallet file for signing messages (testnet recommended)

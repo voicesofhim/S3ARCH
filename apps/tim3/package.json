@@ -11,7 +11,8 @@
     "ao:result": "npx -y tsx src/ao/runner.ts result",
     "ao:tail": "npx -y tsx src/ao/runner.ts tail",
     "ao:test": "npx -y tsx src/ao/runner.ts test",
-    "ao:scenarios": "npx -y tsx src/ao/scenario-runner.ts"
+    "ao:scenarios": "npx -y tsx src/ao/scenario-runner.ts",
+    "ao:demo:atomic": "npx -y tsx src/ao/demos/atomic-mint.ts"
   },
   "dependencies": {
     "@permaweb/aoconnect": "^0.0.90",

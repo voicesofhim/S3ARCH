@@ -35,6 +35,19 @@ Currently, two official plugins are available:
 
 ## Expanding the ESLint configuration
 
+## TIM3 Token Display and Redemption (Atomic Contract)
+
+- Decimals: Display TIM3 and USDA with 6 decimals. The atomic contract and Mock USDA both use 6, which keeps 1:1 math exact and avoids scaling.
+- Ticker: Use "TIM3" for the user token. Any coordinator labels (e.g., "TIM3-COORD") are legacy/advanced metadata.
+- Partial Redemption (Burn): Users can burn any portion of their TIM3 to receive USDA back 1:1. UX should:
+  - Offer a "Redeem" action that sends `Transfer` with `Recipient=burn, Quantity=<amount>` to the TIM3 process.
+  - Show post‑redeem balances using the same 6‑decimal display for consistency.
+- Health/Stats: The atomic process reports `TotalSupply`, `UsdaCollateral`, `CollateralRatio`, and swap/burn counts. A balanced system maintains `CollateralRatio = 1`.
+
+Notes
+- Testing should prefer the atomic flow (Node + aoconnect) and Mock USDA for safety.
+- Coordinator scenarios remain available but are labeled legacy/advanced and may require json preloads on target nodes.
+
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
 ```js

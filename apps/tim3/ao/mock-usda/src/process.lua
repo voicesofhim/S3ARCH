@@ -1,8 +1,8 @@
 -- Mock USDA Token Process for TIM3 Development
 -- This simulates the real USDA token functionality for testing
 
--- Use built-in json library (available in AO environment)
--- local json = require("json") -- Not needed, json is global
+-- Ensure JSON library is available across nodes (some lack a global `json`)
+local json = json or require('json')
 
 -- Initialize process state
 Name = Name or "Mock USDA"

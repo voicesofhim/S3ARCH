@@ -5,6 +5,7 @@
 -- local json = require("json") -- Not needed, json is global
 
 -- Initialize process state
+local json = json or require('json')
 Name = Name or "Mock USDA"
 Ticker = Ticker or "mUSDT"  -- Mock USDT to distinguish from real USDA
 Denomination = Denomination or 6  -- 6 decimal places like real USDA
